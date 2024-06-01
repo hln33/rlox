@@ -1,5 +1,7 @@
 use std::{fs, io};
 
+use scanner::Scanner;
+
 mod scanner;
 
 struct RuntimeError;
@@ -23,6 +25,7 @@ pub fn run_prompt() {
             break;
         }
         // todo run line of code
+        run(user_input.to_string());
     }
 }
 
@@ -31,8 +34,12 @@ fn print_error(line: u64, location: String, message: String) {
     eprintln!("[line {line}] Error {location}: {message}");
 }
 
-fn run(source: String) -> Result<(), RuntimeError> {
+fn run(source: String) {
     // scan tokens
+    let mut scanner = Scanner::new(source);
+    let tokens = scanner.scan_tokens();
 
-    Ok(())
+    for token in tokens {
+        println!("{}", token);
+    }
 }
