@@ -1,14 +1,14 @@
 use core::fmt;
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum Literal {
     String(String),
     Number(f64),
     None,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 enum TokenType {
     // Single-character tokens
     LeftParen,
@@ -59,6 +59,7 @@ enum TokenType {
     Eof,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Token {
     token_type: TokenType,
     lexeme: String,
@@ -180,7 +181,7 @@ impl Scanner {
             _ => {
                 if token.is_digit(10) {
                     self.add_number();
-                } else if token.is_alphabetic() {
+                } else if token.is_alphabetic() || token == '_' {
                     self.add_identifier();
                 } else {
                     eprintln!("{}: Unexpected character.", self.line);
@@ -280,7 +281,7 @@ impl Scanner {
         keywords.insert(String::from("var"), TokenType::Var);
         keywords.insert(String::from("while"), TokenType::While);
 
-        while self.peek().is_alphanumeric() {
+        while self.peek().is_alphanumeric() || self.peek() == '_' {
             self.current += 1;
         }
 
@@ -307,5 +308,248 @@ impl Scanner {
             return '\0';
         }
         self.source.as_bytes()[self.current + 1] as char
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn identifiers() {
+        let mut scanner = Scanner::new(String::from("andy formless fo _ _123 _abc ab123 \n abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_"));
+        let tokens = scanner.scan_tokens();
+
+        let expected_tokens = [
+            Token {
+                token_type: TokenType::Identifier,
+                lexeme: String::from("andy"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Identifier,
+                lexeme: String::from("formless"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Identifier,
+                lexeme: String::from("fo"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Identifier,
+                lexeme: String::from("_"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Identifier,
+                lexeme: String::from("_123"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Identifier,
+                lexeme: String::from("_abc"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Identifier,
+                lexeme: String::from("ab123"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Identifier,
+                lexeme: String::from(
+                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_",
+                ),
+                literal: Literal::None,
+                line: 2,
+            },
+            Token {
+                token_type: TokenType::Eof,
+                lexeme: String::new(),
+                literal: Literal::None,
+                line: 2,
+            },
+        ];
+
+        assert_eq!(tokens.len(), expected_tokens.len());
+        for (i, token) in tokens.iter().enumerate() {
+            assert_eq!(*token, expected_tokens[i]);
+        }
+    }
+
+    #[test]
+    fn keywords() {
+        let mut scanner = Scanner::new(String::from(
+            "and class else false for fun if nil or return super this true var while",
+        ));
+        let tokens = scanner.scan_tokens();
+
+        let expected_tokens = [
+            Token {
+                token_type: TokenType::And,
+                lexeme: String::from("and"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Class,
+                lexeme: String::from("class"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Else,
+                lexeme: String::from("else"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::False,
+                lexeme: String::from("false"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::For,
+                lexeme: String::from("for"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Fun,
+                lexeme: String::from("fun"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::If,
+                lexeme: String::from("if"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Nil,
+                lexeme: String::from("nil"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Or,
+                lexeme: String::from("or"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Return,
+                lexeme: String::from("return"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Super,
+                lexeme: String::from("super"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::This,
+                lexeme: String::from("this"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::True,
+                lexeme: String::from("true"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Var,
+                lexeme: String::from("var"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::While,
+                lexeme: String::from("while"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Eof,
+                lexeme: String::new(),
+                literal: Literal::None,
+                line: 1,
+            },
+        ];
+
+        assert_eq!(tokens.len(), expected_tokens.len());
+        for (i, token) in tokens.iter().enumerate() {
+            assert_eq!(*token, expected_tokens[i]);
+        }
+    }
+
+    #[test]
+    fn numbers() {
+        let mut scanner = Scanner::new(String::from("123\n123.456\n.456\n123."));
+        let tokens = scanner.scan_tokens();
+
+        let expected_tokens = [
+            Token {
+                token_type: TokenType::Number,
+                lexeme: String::from("123"),
+                literal: Literal::Number(123.0),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Number,
+                lexeme: String::from("123.456"),
+                literal: Literal::Number(123.456),
+                line: 2,
+            },
+            Token {
+                token_type: TokenType::Dot,
+                lexeme: String::from("."),
+                literal: Literal::None,
+                line: 3,
+            },
+            Token {
+                token_type: TokenType::Number,
+                lexeme: String::from("456"),
+                literal: Literal::Number(456.0),
+                line: 3,
+            },
+            Token {
+                token_type: TokenType::Number,
+                lexeme: String::from("123"),
+                literal: Literal::Number(123.0),
+                line: 4,
+            },
+            Token {
+                token_type: TokenType::Dot,
+                lexeme: String::from("."),
+                literal: Literal::None,
+                line: 4,
+            },
+            Token {
+                token_type: TokenType::Eof,
+                lexeme: String::new(),
+                literal: Literal::None,
+                line: 4,
+            },
+        ];
+
+        assert_eq!(tokens.len(), expected_tokens.len());
+        for (i, token) in tokens.iter().enumerate() {
+            assert_eq!(*token, expected_tokens[i]);
+        }
     }
 }

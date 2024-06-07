@@ -29,11 +29,6 @@ pub fn run_prompt() {
     }
 }
 
-// calling code will throw error
-fn print_error(line: u64, location: String, message: String) {
-    eprintln!("[line {line}] Error {location}: {message}");
-}
-
 fn run(source: String) {
     // scan tokens
     let mut scanner = Scanner::new(source);
@@ -42,4 +37,9 @@ fn run(source: String) {
     for token in tokens {
         println!("{}", token);
     }
+}
+
+// calling code will throw error
+fn print_error(line: u64, location: String, message: String) {
+    eprintln!("[line {line}] Error {location}: {message}");
 }
