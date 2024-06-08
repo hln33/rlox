@@ -552,4 +552,215 @@ mod tests {
             assert_eq!(*token, expected_tokens[i]);
         }
     }
+
+    #[test]
+    fn punctuators() {
+        let mut scanner = Scanner::new(String::from("(){};,+-*!===<=>=!=<>/."));
+        let tokens = scanner.scan_tokens();
+
+        let expected_tokens = [
+            Token {
+                token_type: TokenType::LeftParen,
+                lexeme: String::from("("),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::RightParen,
+                lexeme: String::from(")"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::LeftBrace,
+                lexeme: String::from("{"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::RightBrace,
+                lexeme: String::from("}"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Semicolon,
+                lexeme: String::from(";"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Comma,
+                lexeme: String::from(","),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Plus,
+                lexeme: String::from("+"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Minus,
+                lexeme: String::from("-"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Star,
+                lexeme: String::from("*"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::BangEqual,
+                lexeme: String::from("!="),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::EqualEqual,
+                lexeme: String::from("=="),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::LessEqual,
+                lexeme: String::from("<="),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::GreaterEqual,
+                lexeme: String::from(">="),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::BangEqual,
+                lexeme: String::from("!="),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Less,
+                lexeme: String::from("<"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Greater,
+                lexeme: String::from(">"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Slash,
+                lexeme: String::from("/"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Dot,
+                lexeme: String::from("."),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Eof,
+                lexeme: String::from(""),
+                literal: Literal::None,
+                line: 1,
+            },
+        ];
+
+        assert_eq!(tokens.len(), expected_tokens.len());
+        for (i, token) in tokens.iter().enumerate() {
+            assert_eq!(*token, expected_tokens[i]);
+        }
+    }
+
+    #[test]
+    fn strings() {
+        let mut scanner = Scanner::new(String::from("\"\" \n \"string\""));
+        let tokens = scanner.scan_tokens();
+
+        let expected_tokens = [
+            Token {
+                token_type: TokenType::String,
+                lexeme: String::from("\"\""),
+                literal: Literal::String(String::from("")),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::String,
+                lexeme: String::from("\"string\""),
+                literal: Literal::String(String::from("string")),
+                line: 2,
+            },
+            Token {
+                token_type: TokenType::Eof,
+                lexeme: String::from(""),
+                literal: Literal::None,
+                line: 2,
+            },
+        ];
+
+        assert_eq!(tokens.len(), expected_tokens.len());
+        for (i, token) in tokens.iter().enumerate() {
+            assert_eq!(*token, expected_tokens[i]);
+        }
+    }
+
+    #[test]
+    fn whitespace() {
+        let mut scanner = Scanner::new(String::from(
+            "space    tabs				newlines
+
+
+
+
+        end",
+        ));
+        let tokens = scanner.scan_tokens();
+
+        let expected_tokens = [
+            Token {
+                token_type: TokenType::Identifier,
+                lexeme: String::from("space"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Identifier,
+                lexeme: String::from("tabs"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Identifier,
+                lexeme: String::from("newlines"),
+                literal: Literal::None,
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::Identifier,
+                lexeme: String::from("end"),
+                literal: Literal::None,
+                line: 6,
+            },
+            Token {
+                token_type: TokenType::Eof,
+                lexeme: String::from(""),
+                literal: Literal::None,
+                line: 6,
+            },
+        ];
+
+        assert_eq!(tokens.len(), expected_tokens.len());
+        for (i, token) in tokens.iter().enumerate() {
+            assert_eq!(*token, expected_tokens[i]);
+        }
+    }
 }
