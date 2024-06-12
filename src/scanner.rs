@@ -2,14 +2,14 @@ use core::fmt;
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
-enum Literal {
+pub enum Literal {
     String(String),
     Number(f64),
     None,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-enum TokenType {
+pub enum TokenType {
     // Single-character tokens
     LeftParen,
     RightParen,
@@ -61,10 +61,10 @@ enum TokenType {
 
 #[derive(Debug, PartialEq)]
 pub struct Token {
-    token_type: TokenType,
-    lexeme: String,
-    literal: Literal,
-    line: usize,
+    pub token_type: TokenType,
+    pub lexeme: String,
+    pub literal: Literal,
+    pub line: usize,
 }
 
 impl fmt::Display for Token {
@@ -179,7 +179,7 @@ impl Scanner {
             '"' => self.add_string(),
 
             _ => {
-                if token.is_digit(10) {
+                if token.is_ascii_digit() {
                     self.add_number();
                 } else if token.is_alphabetic() || token == '_' {
                     self.add_identifier();
@@ -200,7 +200,7 @@ impl Scanner {
         }
 
         self.current += 1;
-        return true;
+        true
     }
 
     fn add_token(&mut self, token_type: TokenType, literal: Literal) {
@@ -239,17 +239,17 @@ impl Scanner {
     }
 
     fn add_number(&mut self) {
-        while self.peek().is_digit(10) {
+        while self.peek().is_ascii_digit() {
             self.current += 1;
         }
 
         // look for fractional part of number
-        if self.peek() == '.' && self.peek_next().is_digit(10) {
+        if self.peek() == '.' && self.peek_next().is_ascii_digit() {
             // consume the '.'
             self.current += 1;
         }
 
-        while self.peek().is_digit(10) {
+        while self.peek().is_ascii_digit() {
             self.current += 1;
         }
 

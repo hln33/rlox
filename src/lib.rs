@@ -1,7 +1,10 @@
 use std::{fs, io};
 
+use expr::test;
 use scanner::Scanner;
 
+mod ast_printer;
+mod expr;
 mod scanner;
 
 struct RuntimeError;
@@ -12,21 +15,23 @@ pub fn run_file(path: &str) {
 }
 
 pub fn run_prompt() {
-    loop {
-        println!("> ");
+    test();
 
-        let mut user_input = String::new();
-        io::stdin()
-            .read_line(&mut user_input)
-            .expect("valid user input");
+    // loop {
+    //     println!("> ");
 
-        let user_input = user_input.trim();
-        if user_input == "exit" {
-            break;
-        }
-        // todo run line of code
-        run(user_input.to_string());
-    }
+    //     let mut user_input = String::new();
+    //     io::stdin()
+    //         .read_line(&mut user_input)
+    //         .expect("valid user input");
+
+    //     let user_input = user_input.trim();
+    //     if user_input == "exit" {
+    //         break;
+    //     }
+    //     // todo run line of code
+    //     run(user_input.to_string());
+    // }
 }
 
 fn run(source: String) {
