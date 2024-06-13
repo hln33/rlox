@@ -25,7 +25,7 @@ pub enum Expr {
     },
 }
 
-pub fn test() {
+pub fn test_ast_print() {
     let expression = Expr::Binary {
         left: Box::new(Expr::Unary {
             operator: Token {
