@@ -1,6 +1,6 @@
 use std::{fs, io};
 
-use expr::test;
+use expr::test_ast_print;
 use scanner::Scanner;
 
 mod ast_printer;
@@ -15,7 +15,7 @@ pub fn run_file(path: &str) {
 }
 
 pub fn run_prompt() {
-    test();
+    test_ast_print();
 
     // loop {
     //     println!("> ");
