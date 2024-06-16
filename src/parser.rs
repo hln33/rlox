@@ -133,7 +133,7 @@ impl Parser<'_> {
             });
         }
 
-        if self.match_token(vec![TokenType::Nil]) {
+        if self.match_token(vec![TokenType::LeftParen]) {
             let expr = self.expression()?;
             let _ = self.consume(
                 TokenType::RightParen,
@@ -145,47 +145,6 @@ impl Parser<'_> {
         }
 
         Err(self.error(self.peek().clone(), String::from("Expected expression.")))
-
-        // let token_type = &self.peek().token_type;
-        // match token_type {
-        //     TokenType::False => {
-        //         self.advance();
-        //         Ok(Expr::Literal {
-        //             value: Literal::Bool(false),
-        //         })
-        //     }
-        //     TokenType::True => {
-        //         self.advance();
-        //         Ok(Expr::Literal {
-        //             value: Literal::Bool(true),
-        //         })
-        //     }
-        //     TokenType::Nil => {
-        //         self.advance();
-        //         Ok(Expr::Literal {
-        //             value: Literal::None,
-        //         })
-        //     }
-        //     TokenType::Number | TokenType::String => {
-        //         self.advance();
-        //         Ok(Expr::Literal {
-        //             value: self.previous().literal,
-        //         })
-        //     }
-        //     TokenType::LeftParen => {
-        //         self.advance();
-
-        //         let expr = self.expression()?;
-        //         let _ = self.consume(
-        //             TokenType::RightParen,
-        //             String::from("Expect ')' after expression"),
-        //         );
-        //         Ok(Expr::Grouping {
-        //             expression: Box::new(expr),
-        //         })
-        //     }
-        //     _ => Err(self.error(self.peek().clone(), String::from("Expected expression."))),
-        // }
     }
 
     fn match_token(&mut self, token_types: Vec<TokenType>) -> bool {
@@ -230,7 +189,6 @@ impl Parser<'_> {
     }
 
     fn previous(&self) -> Token {
-        println!("{}", self.current);
         self.tokens.get(self.current - 1).unwrap().clone()
     }
 
