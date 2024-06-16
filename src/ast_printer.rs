@@ -32,6 +32,7 @@ impl Visitor<String> for AstPrinter {
             Expr::Literal { value } => match value {
                 Literal::Number(value) => value.to_string(),
                 Literal::String(value) => value.to_string(),
+                Literal::Bool(value) => value.to_string(),
                 Literal::None => String::from("nil"),
             },
             Expr::Binary {
