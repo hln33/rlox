@@ -18,7 +18,8 @@ pub fn run_file(path: &str) {
 }
 
 pub fn run_prompt() {
-    test_ast_print();
+    // test_ast_print();
+    // run(String::from("1 + 1"));
 
     loop {
         println!("> ");
@@ -44,9 +45,10 @@ fn run(source: String) {
 
     let mut parser = Parser::new(tokens);
     let expression = parser.parse();
+    // println!("{:?}", expression);
 
     let printer = AstPrinter {};
-    printer.print(&expression);
+    println!("{:?}", printer.print(&expression));
 }
 
 // calling code will throw error
