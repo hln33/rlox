@@ -25,15 +25,15 @@ impl Interpreter {
             // arithmetic
             TokenType::Minus => match (left_expr, right_expr) {
                 (Value::Number(left), Value::Number(right)) => Value::Number(left - right),
-                _ => panic!("expected values for minus operation"),
+                _ => panic!("unexpected values for minus operation"),
             },
             TokenType::Slash => match (left_expr, right_expr) {
                 (Value::Number(left), Value::Number(right)) => Value::Number(left / right),
-                _ => panic!("expected values for division operation"),
+                _ => panic!("unexpected values for division operation"),
             },
             TokenType::Star => match (left_expr, right_expr) {
                 (Value::Number(left), Value::Number(right)) => Value::Number(left * right),
-                _ => panic!("expected values for multiplication operation"),
+                _ => panic!("unexpected values for multiplication operation"),
             },
             TokenType::Plus => match (left_expr, right_expr) {
                 (Value::Number(left), Value::Number(right)) => Value::Number(left + right),
@@ -42,25 +42,25 @@ impl Interpreter {
                     res.push_str(&right);
                     Value::String(res)
                 }
-                _ => panic!("expected values for plus operation"),
+                _ => panic!("unexpected values for plus operation"),
             },
 
             // comparison
             TokenType::Greater => match (left_expr, right_expr) {
                 (Value::Number(left), Value::Number(right)) => Value::Boolean(left > right),
-                _ => panic!("expected values for greater than operation"),
+                _ => panic!("unexpected values for greater than operation"),
             },
             TokenType::GreaterEqual => match (left_expr, right_expr) {
                 (Value::Number(left), Value::Number(right)) => Value::Boolean(left >= right),
-                _ => panic!("expected values for greater than or equal operation"),
+                _ => panic!("unexpected values for greater than or equal operation"),
             },
             TokenType::Less => match (left_expr, right_expr) {
                 (Value::Number(left), Value::Number(right)) => Value::Boolean(left < right),
-                _ => panic!("expected values for less than operation"),
+                _ => panic!("unexpected values for less than operation"),
             },
             TokenType::LessEqual => match (left_expr, right_expr) {
                 (Value::Number(left), Value::Number(right)) => Value::Boolean(left <= right),
-                _ => panic!("expected values for less than or equal operation"),
+                _ => panic!("unexpected values for less than or equal operation"),
             },
 
             // equality
