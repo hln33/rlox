@@ -7,6 +7,7 @@ use scanner::Scanner;
 
 mod ast_printer;
 mod expr;
+mod interpreter;
 mod parser;
 mod scanner;
 
