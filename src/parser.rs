@@ -5,7 +5,7 @@ use crate::{
 };
 
 #[derive(Debug)]
-struct ParseError {}
+struct ParseError;
 
 pub struct Parser<'a> {
     tokens: &'a Vec<Token>,
