@@ -36,13 +36,9 @@ pub struct Interpreter;
 
 impl Interpreter {
     pub fn interpret(&self, expr: &Expr) {
-        if let Ok(value) = self.evaluate(expr) {
-            println!("{}", value);
-        }
-
         match self.evaluate(expr) {
             Ok(value) => println!("{}", value),
-            Err(_) => println!("error!"),
+            Err(e) => e.error(),
         }
     }
 
@@ -63,15 +59,15 @@ impl Interpreter {
             // arithmetic
             TokenType::Minus => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left - right)),
-                _ => panic!("unexpected values for minus operation"),
+                _ => Err(Interpreter::number_operands_error(operator)),
             },
             TokenType::Slash => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left / right)),
-                _ => panic!("unexpected values for division operation"),
+                _ => Err(Interpreter::number_operands_error(operator)),
             },
             TokenType::Star => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left * right)),
-                _ => panic!("unexpected values for multiplication operation"),
+                _ => Err(Interpreter::number_operands_error(operator)),
             },
             TokenType::Plus => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left + right)),
@@ -80,30 +76,30 @@ impl Interpreter {
                     res.push_str(&right);
                     Ok(Value::String(res))
                 }
-                _ => panic!("unexpected values for plus operation"),
+                _ => Err(Interpreter::number_operands_error(operator)),
             },
 
             // comparison
             TokenType::Greater => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Ok(Value::Boolean(left > right)),
-                _ => panic!("unexpected values for greater than operation"),
+                _ => Err(Interpreter::number_operands_error(operator)),
             },
             TokenType::GreaterEqual => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Ok(Value::Boolean(left >= right)),
-                _ => panic!("unexpected values for greater than or equal operation"),
+                _ => Err(Interpreter::number_operands_error(operator)),
             },
             TokenType::Less => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Ok(Value::Boolean(left < right)),
-                _ => panic!("unexpected values for less than operation"),
+                _ => Err(Interpreter::number_operands_error(operator)),
             },
             TokenType::LessEqual => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Ok(Value::Boolean(left <= right)),
-                _ => panic!("unexpected values for less than or equal operation"),
+                _ => Err(Interpreter::number_operands_error(operator)),
             },
 
             // equality
-            TokenType::BangEqual => Ok(Value::Boolean(!self.is_equal(left, right))),
-            TokenType::Equal => Ok(Value::Boolean(self.is_equal(left, right))),
+            TokenType::BangEqual => Ok(Value::Boolean(!Interpreter::is_equal(left, right))),
+            TokenType::Equal => Ok(Value::Boolean(Interpreter::is_equal(left, right))),
 
             _ => panic!("unexpected operator for binary expression"),
         }
@@ -124,14 +120,28 @@ impl Interpreter {
         match operator.token_type {
             TokenType::Minus => match right_expr {
                 Value::Number(value) => Ok(Value::Number(-value)),
-                _ => panic!("expected number for right expression"),
+                _ => Err(Interpreter::number_operand_error(operator)),
             },
-            TokenType::Bang => Ok(Value::Boolean(!self.is_truthy(right_expr))),
-            _ => panic!("unexpected operator for unary expression"),
+            TokenType::Bang => Ok(Value::Boolean(!Interpreter::is_truthy(right_expr))),
+            _ => Err(Interpreter::number_operand_error(operator)),
         }
     }
 
-    fn is_truthy(&self, value: Value) -> bool {
+    fn number_operand_error(operator: &Token) -> RuntimeError {
+        RuntimeError {
+            token: operator.clone(),
+            message: String::from("Operand must be a number."),
+        }
+    }
+
+    fn number_operands_error(operator: &Token) -> RuntimeError {
+        RuntimeError {
+            token: operator.clone(),
+            message: String::from("Operands must be a numbers."),
+        }
+    }
+
+    fn is_truthy(value: Value) -> bool {
         match value {
             Value::Nil => false,
             Value::Boolean(value) => value,
@@ -139,7 +149,7 @@ impl Interpreter {
         }
     }
 
-    fn is_equal(&self, left: Value, right: Value) -> bool {
+    fn is_equal(left: Value, right: Value) -> bool {
         match (left, right) {
             (Value::Nil, Value::Nil) => true,
             (Value::Number(left), Value::Number(right)) => left == right,
