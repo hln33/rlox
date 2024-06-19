@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::{
     expr::{Expr, Visitor},
     scanner::{Literal, Token, TokenType},
@@ -10,32 +12,56 @@ enum Value {
     Nil,
 }
 
-pub struct Interpreter {}
+impl Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut s;
+        match self {
+            Value::Boolean(value) => s = value.to_string(),
+            Value::Number(value) => {
+                s = value.to_string();
+                if s.ends_with(".0") {
+                    s = s.strip_suffix(".0").unwrap().to_string();
+                }
+            }
+            Value::String(value) => s = value.clone(),
+            Value::Nil => s = String::from("nil"),
+        }
+
+        write!(f, "{}", s)
+    }
+}
+
+pub struct Interpreter;
 
 impl Interpreter {
+    pub fn interpret(&self, expr: &Expr) {
+        let value = self.evaluate(expr);
+        println!("{}", value);
+    }
+
     fn evaluate(&self, expr: &Expr) -> Value {
         self.visit_expr(expr)
     }
 
     fn visit_binary(&self, left: &Expr, operator: &Token, right: &Expr) -> Value {
-        let left_expr = self.evaluate(left);
-        let right_expr = self.evaluate(right);
+        let left = self.evaluate(left);
+        let right = self.evaluate(right);
 
         match operator.token_type {
             // arithmetic
-            TokenType::Minus => match (left_expr, right_expr) {
+            TokenType::Minus => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Value::Number(left - right),
                 _ => panic!("unexpected values for minus operation"),
             },
-            TokenType::Slash => match (left_expr, right_expr) {
+            TokenType::Slash => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Value::Number(left / right),
                 _ => panic!("unexpected values for division operation"),
             },
-            TokenType::Star => match (left_expr, right_expr) {
+            TokenType::Star => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Value::Number(left * right),
                 _ => panic!("unexpected values for multiplication operation"),
             },
-            TokenType::Plus => match (left_expr, right_expr) {
+            TokenType::Plus => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Value::Number(left + right),
                 (Value::String(left), Value::String(right)) => {
                     let mut res = left.to_owned();
@@ -46,26 +72,26 @@ impl Interpreter {
             },
 
             // comparison
-            TokenType::Greater => match (left_expr, right_expr) {
+            TokenType::Greater => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Value::Boolean(left > right),
                 _ => panic!("unexpected values for greater than operation"),
             },
-            TokenType::GreaterEqual => match (left_expr, right_expr) {
+            TokenType::GreaterEqual => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Value::Boolean(left >= right),
                 _ => panic!("unexpected values for greater than or equal operation"),
             },
-            TokenType::Less => match (left_expr, right_expr) {
+            TokenType::Less => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Value::Boolean(left < right),
                 _ => panic!("unexpected values for less than operation"),
             },
-            TokenType::LessEqual => match (left_expr, right_expr) {
+            TokenType::LessEqual => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Value::Boolean(left <= right),
                 _ => panic!("unexpected values for less than or equal operation"),
             },
 
             // equality
-            TokenType::BangEqual => Value::Boolean(!self.is_equal(left_expr, right_expr)),
-            TokenType::Equal => Value::Boolean(self.is_equal(left_expr, right_expr)),
+            TokenType::BangEqual => Value::Boolean(!self.is_equal(left, right)),
+            TokenType::Equal => Value::Boolean(self.is_equal(left, right)),
 
             _ => panic!("unexpected operator for binary expression"),
         }

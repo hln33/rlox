@@ -2,6 +2,7 @@ use std::{fs, io};
 
 use ast_printer::AstPrinter;
 use expr::test_ast_print;
+use interpreter::Interpreter;
 use parser::Parser;
 use scanner::Scanner;
 
@@ -48,8 +49,11 @@ fn run(source: String) {
     let expression = parser.parse();
     // println!("{:?}", expression);
 
-    let printer = AstPrinter {};
-    println!("{:?}", printer.print(&expression));
+    let interpreter = Interpreter;
+    interpreter.interpret(&expression);
+
+    // let printer = AstPrinter {};
+    // println!("{:?}", printer.print(&expression));
 }
 
 // calling code will throw error
