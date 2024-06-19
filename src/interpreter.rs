@@ -3,6 +3,7 @@ use std::fmt::Display;
 use crate::{
     expr::{Expr, Visitor},
     scanner::{Literal, Token, TokenType},
+    RuntimeError,
 };
 
 enum Value {
@@ -35,63 +36,74 @@ pub struct Interpreter;
 
 impl Interpreter {
     pub fn interpret(&self, expr: &Expr) {
-        let value = self.evaluate(expr);
-        println!("{}", value);
+        if let Ok(value) = self.evaluate(expr) {
+            println!("{}", value);
+        }
+
+        match self.evaluate(expr) {
+            Ok(value) => println!("{}", value),
+            Err(_) => println!("error!"),
+        }
     }
 
-    fn evaluate(&self, expr: &Expr) -> Value {
+    fn evaluate(&self, expr: &Expr) -> Result<Value, RuntimeError> {
         self.visit_expr(expr)
     }
 
-    fn visit_binary(&self, left: &Expr, operator: &Token, right: &Expr) -> Value {
-        let left = self.evaluate(left);
-        let right = self.evaluate(right);
+    fn visit_binary(
+        &self,
+        left: &Expr,
+        operator: &Token,
+        right: &Expr,
+    ) -> Result<Value, RuntimeError> {
+        let left = self.evaluate(left)?;
+        let right = self.evaluate(right)?;
 
         match operator.token_type {
             // arithmetic
             TokenType::Minus => match (left, right) {
-                (Value::Number(left), Value::Number(right)) => Value::Number(left - right),
+                (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left - right)),
                 _ => panic!("unexpected values for minus operation"),
             },
             TokenType::Slash => match (left, right) {
-                (Value::Number(left), Value::Number(right)) => Value::Number(left / right),
+                (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left / right)),
                 _ => panic!("unexpected values for division operation"),
             },
             TokenType::Star => match (left, right) {
-                (Value::Number(left), Value::Number(right)) => Value::Number(left * right),
+                (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left * right)),
                 _ => panic!("unexpected values for multiplication operation"),
             },
             TokenType::Plus => match (left, right) {
-                (Value::Number(left), Value::Number(right)) => Value::Number(left + right),
+                (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left + right)),
                 (Value::String(left), Value::String(right)) => {
                     let mut res = left.to_owned();
                     res.push_str(&right);
-                    Value::String(res)
+                    Ok(Value::String(res))
                 }
                 _ => panic!("unexpected values for plus operation"),
             },
 
             // comparison
             TokenType::Greater => match (left, right) {
-                (Value::Number(left), Value::Number(right)) => Value::Boolean(left > right),
+                (Value::Number(left), Value::Number(right)) => Ok(Value::Boolean(left > right)),
                 _ => panic!("unexpected values for greater than operation"),
             },
             TokenType::GreaterEqual => match (left, right) {
-                (Value::Number(left), Value::Number(right)) => Value::Boolean(left >= right),
+                (Value::Number(left), Value::Number(right)) => Ok(Value::Boolean(left >= right)),
                 _ => panic!("unexpected values for greater than or equal operation"),
             },
             TokenType::Less => match (left, right) {
-                (Value::Number(left), Value::Number(right)) => Value::Boolean(left < right),
+                (Value::Number(left), Value::Number(right)) => Ok(Value::Boolean(left < right)),
                 _ => panic!("unexpected values for less than operation"),
             },
             TokenType::LessEqual => match (left, right) {
-                (Value::Number(left), Value::Number(right)) => Value::Boolean(left <= right),
+                (Value::Number(left), Value::Number(right)) => Ok(Value::Boolean(left <= right)),
                 _ => panic!("unexpected values for less than or equal operation"),
             },
 
             // equality
-            TokenType::BangEqual => Value::Boolean(!self.is_equal(left, right)),
-            TokenType::Equal => Value::Boolean(self.is_equal(left, right)),
+            TokenType::BangEqual => Ok(Value::Boolean(!self.is_equal(left, right))),
+            TokenType::Equal => Ok(Value::Boolean(self.is_equal(left, right))),
 
             _ => panic!("unexpected operator for binary expression"),
         }
@@ -106,15 +118,15 @@ impl Interpreter {
         }
     }
 
-    fn visit_unary(&self, operator: &Token, right: &Expr) -> Value {
-        let right_expr = self.evaluate(right);
+    fn visit_unary(&self, operator: &Token, right: &Expr) -> Result<Value, RuntimeError> {
+        let right_expr = self.evaluate(right)?;
 
         match operator.token_type {
             TokenType::Minus => match right_expr {
-                Value::Number(value) => Value::Number(-value),
+                Value::Number(value) => Ok(Value::Number(-value)),
                 _ => panic!("expected number for right expression"),
             },
-            TokenType::Bang => Value::Boolean(!self.is_truthy(right_expr)),
+            TokenType::Bang => Ok(Value::Boolean(!self.is_truthy(right_expr))),
             _ => panic!("unexpected operator for unary expression"),
         }
     }
@@ -138,8 +150,8 @@ impl Interpreter {
     }
 }
 
-impl Visitor<Value> for Interpreter {
-    fn visit_expr(&self, expr: &Expr) -> Value {
+impl Visitor<Result<Value, RuntimeError>> for Interpreter {
+    fn visit_expr(&self, expr: &Expr) -> Result<Value, RuntimeError> {
         match expr {
             Expr::Binary {
                 left,
@@ -147,7 +159,7 @@ impl Visitor<Value> for Interpreter {
                 right,
             } => self.visit_binary(left, operator, right),
             Expr::Grouping { expression } => self.evaluate(expression),
-            Expr::Literal { value } => self.visit_literal(value),
+            Expr::Literal { value } => Ok(self.visit_literal(value)),
             Expr::Unary { operator, right } => self.visit_unary(operator, right),
         }
     }
