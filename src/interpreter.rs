@@ -1,8 +1,9 @@
 use std::fmt::Display;
 
 use crate::{
-    expr::{Expr, Visitor},
+    expr::{self, Expr},
     scanner::{Literal, Token, TokenType},
+    stmt::{self, Stmt},
     RuntimeError,
 };
 
@@ -35,15 +36,31 @@ impl Display for Value {
 pub struct Interpreter;
 
 impl Interpreter {
-    pub fn interpret(&self, expr: &Expr) {
-        match self.evaluate(expr) {
-            Ok(value) => println!("{}", value),
-            Err(e) => e.error(),
+    pub fn interpret(&self, statements: Vec<Stmt>) {
+        for statement in statements {
+            match self.execute(&statement) {
+                Ok(_) => (),
+                Err(e) => e.error(),
+            }
         }
     }
 
     fn evaluate(&self, expr: &Expr) -> Result<Value, RuntimeError> {
-        self.visit_expr(expr)
+        expr::Visitor::visit_expr(self, expr)
+    }
+
+    fn execute(&self, stmt: &Stmt) -> Result<(), RuntimeError> {
+        stmt::Visitor::visit_stmt(self, stmt)
+    }
+
+    fn visit_expr_stmt(&self, expr: &Expr) -> Result<(), RuntimeError> {
+        self.evaluate(expr).map(|_| ())
+    }
+
+    fn visit_print_stmt(&self, expr: &Expr) -> Result<(), RuntimeError> {
+        let value = self.evaluate(expr)?;
+        println!("{}", value);
+        Ok(())
     }
 
     fn visit_binary(
@@ -160,7 +177,7 @@ impl Interpreter {
     }
 }
 
-impl Visitor<Result<Value, RuntimeError>> for Interpreter {
+impl expr::Visitor<Result<Value, RuntimeError>> for Interpreter {
     fn visit_expr(&self, expr: &Expr) -> Result<Value, RuntimeError> {
         match expr {
             Expr::Binary {
@@ -171,6 +188,15 @@ impl Visitor<Result<Value, RuntimeError>> for Interpreter {
             Expr::Grouping { expression } => self.evaluate(expression),
             Expr::Literal { value } => Ok(self.visit_literal(value)),
             Expr::Unary { operator, right } => self.visit_unary(operator, right),
+        }
+    }
+}
+
+impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
+    fn visit_stmt(&self, stmt: &Stmt) -> Result<(), RuntimeError> {
+        match stmt {
+            Stmt::Expression(expr) => self.visit_expr_stmt(expr),
+            Stmt::Print(expr) => self.visit_print_stmt(expr),
         }
     }
 }
