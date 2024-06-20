@@ -1,7 +1,4 @@
-use crate::{
-    ast_printer::AstPrinter,
-    scanner::{Literal, Token},
-};
+use crate::scanner::{Literal, Token};
 
 pub trait Visitor<T> {
     fn visit_expr(&self, expression: &Expr) -> T;

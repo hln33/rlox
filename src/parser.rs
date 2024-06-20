@@ -22,7 +22,7 @@ impl Parser<'_> {
         let mut statements = vec![];
 
         while !self.is_at_end() {
-            statements.push(self.statement().unwrap());
+            statements.push(self.declaration().unwrap());
         }
 
         statements
@@ -30,6 +30,22 @@ impl Parser<'_> {
 
     fn expression(&mut self) -> Result<Expr, ParseError> {
         self.equality()
+    }
+
+    fn declaration(&mut self) -> Option<Stmt> {
+        let res = if self.match_token(&[TokenType::Var]) {
+            self.var_declaration()
+        } else {
+            self.statement()
+        };
+
+        match res {
+            Ok(stmt) => Some(stmt),
+            Err(_) => {
+                self.synchronize();
+                None
+            }
+        }
     }
 
     fn statement(&mut self) -> Result<Stmt, ParseError> {
@@ -47,6 +63,21 @@ impl Parser<'_> {
             String::from("Expect ';' after value."),
         );
         Ok(Stmt::Print(value))
+    }
+
+    fn var_declaration(&mut self) -> Result<Stmt, ParseError> {
+        let name = self.consume(TokenType::Identifier, String::from("Expect variable name."))?;
+
+        let mut initializer = None;
+        if self.match_token(&[TokenType::Equal]) {
+            initializer = Some(self.expression()?);
+        }
+
+        let _ = self.consume(
+            TokenType::Semicolon,
+            String::from("Expect ';' after variable declaration"),
+        );
+        Ok(Stmt::Var { name, initializer })
     }
 
     fn expression_statement(&mut self) -> Result<Stmt, ParseError> {
@@ -121,6 +152,12 @@ impl Parser<'_> {
         if self.match_token(&[TokenType::Number, TokenType::String]) {
             return Ok(Expr::Literal {
                 value: self.previous().literal,
+            });
+        }
+
+        if self.match_token(&[TokenType::Identifier]) {
+            return Ok(Expr::Variable {
+                name: self.previous(),
             });
         }
 
