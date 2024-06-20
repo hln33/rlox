@@ -1,7 +1,5 @@
 use std::{fs, io, process};
 
-use ast_printer::AstPrinter;
-use expr::test_ast_print;
 use interpreter::Interpreter;
 use parser::Parser;
 use scanner::{Scanner, Token};
@@ -42,9 +40,6 @@ pub fn run_file(path: &str) {
 }
 
 pub fn run_prompt() {
-    // test_ast_print();
-    // run(String::from("1 + 1"));
-
     loop {
         println!("> ");
 
@@ -63,19 +58,14 @@ pub fn run_prompt() {
 }
 
 fn run(source: String) {
-    // scan tokens
     let mut scanner = Scanner::new(source);
     let tokens = scanner.scan_tokens();
 
     let mut parser = Parser::new(tokens);
     let statements = parser.parse();
-    // println!("{:?}", expression);
 
     let interpreter = Interpreter;
     interpreter.interpret(statements);
-
-    // let printer = AstPrinter {};
-    // println!("{:?}", printer.print(&expression));
 }
 
 // calling code will throw error
