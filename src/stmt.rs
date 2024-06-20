@@ -1,7 +1,7 @@
 use crate::{expr::Expr, scanner::Token};
 
 pub trait Visitor<T> {
-    fn visit_stmt(&self, stmt: &Stmt) -> T;
+    fn visit_stmt(&mut self, stmt: &Stmt) -> T;
 }
 
 pub enum Stmt {

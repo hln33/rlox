@@ -5,6 +5,7 @@ use parser::Parser;
 use scanner::{Scanner, Token};
 
 mod ast_printer;
+mod environment;
 mod expr;
 mod interpreter;
 mod parser;
@@ -40,6 +41,8 @@ pub fn run_file(path: &str) {
 }
 
 pub fn run_prompt() {
+    let mut interpreter = Interpreter::new();
+
     loop {
         println!("> ");
 
@@ -53,18 +56,17 @@ pub fn run_prompt() {
             break;
         }
         // todo run line of code
-        run(user_input.to_string());
+        run(user_input.to_string(), &mut interpreter);
     }
 }
 
-fn run(source: String) {
+fn run(source: String, interpreter: &mut Interpreter) {
     let mut scanner = Scanner::new(source);
     let tokens = scanner.scan_tokens();
 
     let mut parser = Parser::new(tokens);
     let statements = parser.parse();
 
-    let interpreter = Interpreter;
     interpreter.interpret(statements);
 }
 

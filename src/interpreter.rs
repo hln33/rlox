@@ -1,13 +1,15 @@
 use std::fmt::Display;
 
 use crate::{
+    environment::Environment,
     expr::{self, Expr},
     scanner::{Literal, Token, TokenType},
     stmt::{self, Stmt},
     RuntimeError,
 };
 
-enum Value {
+#[derive(Clone)]
+pub enum Value {
     Boolean(bool),
     Number(f64),
     String(String),
@@ -33,10 +35,18 @@ impl Display for Value {
     }
 }
 
-pub struct Interpreter;
+pub struct Interpreter {
+    environment: Environment,
+}
 
 impl Interpreter {
-    pub fn interpret(&self, statements: Vec<Stmt>) {
+    pub fn new() -> Interpreter {
+        Interpreter {
+            environment: Environment::new(),
+        }
+    }
+
+    pub fn interpret(&mut self, statements: Vec<Stmt>) {
         for statement in statements {
             match self.execute(&statement) {
                 Ok(_) => (),
@@ -49,7 +59,7 @@ impl Interpreter {
         expr::Visitor::visit_expr(self, expr)
     }
 
-    fn execute(&self, stmt: &Stmt) -> Result<(), RuntimeError> {
+    fn execute(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
         stmt::Visitor::visit_stmt(self, stmt)
     }
 
@@ -60,6 +70,20 @@ impl Interpreter {
     fn visit_print_stmt(&self, expr: &Expr) -> Result<(), RuntimeError> {
         let value = self.evaluate(expr)?;
         println!("{}", value);
+        Ok(())
+    }
+
+    fn visit_var_stmt(
+        &mut self,
+        name: &Token,
+        initializer: &Option<Expr>,
+    ) -> Result<(), RuntimeError> {
+        let mut value = Value::Nil;
+        if let Some(expr) = initializer {
+            value = self.evaluate(expr)?;
+        }
+
+        self.environment.define(name.lexeme.clone(), value);
         Ok(())
     }
 
@@ -144,6 +168,10 @@ impl Interpreter {
         }
     }
 
+    fn visit_var_expr(&self, name: &Token) -> Result<Value, RuntimeError> {
+        self.environment.get(name)
+    }
+
     fn number_operand_error(operator: &Token) -> RuntimeError {
         RuntimeError {
             token: operator.clone(),
@@ -188,17 +216,17 @@ impl expr::Visitor<Result<Value, RuntimeError>> for Interpreter {
             Expr::Grouping { expression } => self.evaluate(expression),
             Expr::Literal { value } => Ok(self.visit_literal(value)),
             Expr::Unary { operator, right } => self.visit_unary(operator, right),
-            Expr::Variable { name } => todo!(),
+            Expr::Variable { name } => self.visit_var_expr(name),
         }
     }
 }
 
 impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
-    fn visit_stmt(&self, stmt: &Stmt) -> Result<(), RuntimeError> {
+    fn visit_stmt(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
         match stmt {
             Stmt::Expression(expr) => self.visit_expr_stmt(expr),
             Stmt::Print(expr) => self.visit_print_stmt(expr),
-            Stmt::Var { name, initializer } => todo!(),
+            Stmt::Var { name, initializer } => self.visit_var_stmt(name, initializer),
         }
     }
 }
