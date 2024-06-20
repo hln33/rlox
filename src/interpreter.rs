@@ -188,6 +188,7 @@ impl expr::Visitor<Result<Value, RuntimeError>> for Interpreter {
             Expr::Grouping { expression } => self.evaluate(expression),
             Expr::Literal { value } => Ok(self.visit_literal(value)),
             Expr::Unary { operator, right } => self.visit_unary(operator, right),
+            Expr::Variable { name } => todo!(),
         }
     }
 }
@@ -197,6 +198,7 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
         match stmt {
             Stmt::Expression(expr) => self.visit_expr_stmt(expr),
             Stmt::Print(expr) => self.visit_print_stmt(expr),
+            Stmt::Var { name, initializer } => todo!(),
         }
     }
 }

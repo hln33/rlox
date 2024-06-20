@@ -24,34 +24,7 @@ pub enum Expr {
         operator: Token,
         right: Box<Expr>,
     },
-}
-
-pub fn test_ast_print() {
-    let expression = Expr::Binary {
-        left: Box::new(Expr::Unary {
-            operator: Token {
-                token_type: crate::scanner::TokenType::Minus,
-                lexeme: String::from("-"),
-                literal: Literal::None,
-                line: 1,
-            },
-            right: Box::new(Expr::Literal {
-                value: Literal::Number(123.0),
-            }),
-        }),
-        operator: Token {
-            token_type: crate::scanner::TokenType::Star,
-            lexeme: String::from("*"),
-            literal: Literal::None,
-            line: 1,
-        },
-        right: Box::new(Expr::Grouping {
-            expression: Box::new(Expr::Literal {
-                value: Literal::Number(45.67),
-            }),
-        }),
-    };
-
-    let printer = AstPrinter {};
-    println!("{}", printer.print(&expression));
+    Variable {
+        name: Token,
+    },
 }
