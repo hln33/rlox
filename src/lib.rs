@@ -11,9 +11,11 @@ mod expr;
 mod interpreter;
 mod parser;
 mod scanner;
+mod stmt;
 
 static mut HAD_RUNTIME_ERROR: bool = false;
 
+#[derive(Debug)]
 struct RuntimeError {
     token: Token,
     message: String,
@@ -66,11 +68,11 @@ fn run(source: String) {
     let tokens = scanner.scan_tokens();
 
     let mut parser = Parser::new(tokens);
-    let expression = parser.parse();
+    let statements = parser.parse();
     // println!("{:?}", expression);
 
     let interpreter = Interpreter;
-    interpreter.interpret(&expression);
+    interpreter.interpret(statements);
 
     // let printer = AstPrinter {};
     // println!("{:?}", printer.print(&expression));

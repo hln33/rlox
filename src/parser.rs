@@ -2,6 +2,7 @@ use crate::{
     expr::Expr,
     print_error,
     scanner::{Literal, Token, TokenType},
+    stmt::Stmt,
 };
 
 #[derive(Debug)]
@@ -17,15 +18,44 @@ impl Parser<'_> {
         Parser { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Expr {
-        match self.expression() {
-            Ok(expr) => expr,
-            Err(_) => panic!("parsing error!"),
+    pub fn parse(&mut self) -> Vec<Stmt> {
+        let mut statements = vec![];
+
+        while !self.is_at_end() {
+            statements.push(self.statement().unwrap());
         }
+
+        statements
     }
 
     fn expression(&mut self) -> Result<Expr, ParseError> {
         self.equality()
+    }
+
+    fn statement(&mut self) -> Result<Stmt, ParseError> {
+        if self.match_token(&[TokenType::Print]) {
+            return self.print_statment();
+        }
+
+        self.expression_statement()
+    }
+
+    fn print_statment(&mut self) -> Result<Stmt, ParseError> {
+        let value = self.expression()?;
+        let _ = self.consume(
+            TokenType::Semicolon,
+            String::from("Expect ';' after value."),
+        );
+        Ok(Stmt::Print(value))
+    }
+
+    fn expression_statement(&mut self) -> Result<Stmt, ParseError> {
+        let value = self.expression()?;
+        let _ = self.consume(
+            TokenType::Semicolon,
+            String::from("Expect ';' after expression."),
+        );
+        Ok(Stmt::Expression(value))
     }
 
     fn equality(&mut self) -> Result<Expr, ParseError> {
