@@ -1,13 +1,22 @@
 use crate::{interpreter::Value, scanner::Token, RuntimeError};
-use std::collections::HashMap;
+use std::collections::{hash_map::Entry, HashMap};
 
 pub struct Environment {
+    enclosing: Option<Box<Environment>>,
     values: HashMap<String, Value>,
 }
 
 impl Environment {
-    pub fn new() -> Environment {
+    pub fn new_global() -> Environment {
         Environment {
+            enclosing: None,
+            values: HashMap::new(),
+        }
+    }
+
+    pub fn new_local(enclosing: Option<Box<Environment>>) -> Environment {
+        Environment {
+            enclosing,
             values: HashMap::new(),
         }
     }
@@ -17,19 +26,28 @@ impl Environment {
     }
 
     pub fn get(&self, name: &Token) -> Result<Value, RuntimeError> {
-        match self.values.get(&name.lexeme) {
-            Some(value) => Ok(value.clone()),
-            None => Err(RuntimeError {
-                token: name.clone(),
-                message: format!("Undefined variable {}.", name.lexeme),
-            }),
+        if let Some(value) = self.values.get(&name.lexeme) {
+            return Ok(value.clone());
         }
+
+        if let Some(enclosing) = &self.enclosing {
+            return enclosing.get(name);
+        }
+
+        Err(RuntimeError {
+            token: name.clone(),
+            message: format!("Undefined variable {}.", name.lexeme),
+        })
     }
 
-    pub fn assign(&mut self, name: Token, value: Value) -> Result<(), RuntimeError> {
-        if self.values.contains_key(&name.lexeme) {
-            self.values.insert(name.lexeme, value);
+    pub fn assign(&mut self, name: &Token, value: Value) -> Result<(), RuntimeError> {
+        if let Entry::Occupied(mut e) = self.values.entry(name.lexeme.clone()) {
+            e.insert(value);
             return Ok(());
+        }
+
+        if let Some(enclosing) = &mut self.enclosing {
+            return enclosing.assign(name, value);
         }
 
         Err(RuntimeError {

@@ -4,7 +4,7 @@ use interpreter::Interpreter;
 use parser::Parser;
 use scanner::{Scanner, Token};
 
-mod ast_printer;
+// mod ast_printer;
 mod environment;
 mod expr;
 mod interpreter;
@@ -30,7 +30,7 @@ impl RuntimeError {
 }
 
 pub fn run_file(path: &str) {
-    let bytes = fs::read(path).expect("file to be readable");
+    let _bytes = fs::read(path).expect("file to be readable");
     // run code
 
     unsafe {

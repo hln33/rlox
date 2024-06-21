@@ -1,7 +1,7 @@
-use std::fmt::Display;
+use std::{fmt::Display, rc::Rc};
 
 use crate::{
-    environment::Environment,
+    environment::{self, Environment},
     expr::{self, Expr},
     scanner::{Literal, Token, TokenType},
     stmt::{self, Stmt},
@@ -42,7 +42,7 @@ pub struct Interpreter {
 impl Interpreter {
     pub fn new() -> Interpreter {
         Interpreter {
-            environment: Environment::new(),
+            environment: Environment::new_global(),
         }
     }
 
@@ -61,6 +61,23 @@ impl Interpreter {
 
     fn execute(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
         stmt::Visitor::visit_stmt(self, stmt)
+    }
+
+    fn execute_block(
+        &mut self,
+        statements: &Vec<Stmt>,
+        environment: Environment,
+    ) -> Result<(), RuntimeError> {
+        let previous = self.environment;
+
+        self.environment = environment;
+
+        for statement in statements {
+            self.execute(&statement);
+        }
+
+        self.environment = previous;
+        Ok(())
     }
 
     fn visit_expr_stmt(&mut self, expr: &Expr) -> Result<(), RuntimeError> {
@@ -90,8 +107,10 @@ impl Interpreter {
     fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> Result<Value, RuntimeError> {
         let value = self.evaluate(value)?;
 
-        self.environment.assign(name.clone(), value.clone());
-        Ok(value)
+        match self.environment.assign(name, value.clone()) {
+            Ok(_) => Ok(value),
+            Err(e) => Err(e),
+        }
     }
 
     fn visit_binary(
@@ -235,6 +254,12 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
             Stmt::Expression(expr) => self.visit_expr_stmt(expr),
             Stmt::Print(expr) => self.visit_print_stmt(expr),
             Stmt::Var { name, initializer } => self.visit_var_stmt(name, initializer),
+            Stmt::Block(statements) => {
+                todo!();
+
+                let local_env = Environment::new_local(Some(Box::new(self.environment)));
+                self.execute_block(statements, local_env)
+            }
         }
     }
 }
