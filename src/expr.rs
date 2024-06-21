@@ -1,7 +1,7 @@
 use crate::scanner::{Literal, Token};
 
 pub trait Visitor<T> {
-    fn visit_expr(&self, expression: &Expr) -> T;
+    fn visit_expr(&mut self, expression: &Expr) -> T;
 }
 
 #[derive(Debug)]
@@ -23,5 +23,9 @@ pub enum Expr {
     },
     Variable {
         name: Token,
+    },
+    Assign {
+        name: Token,
+        value: Box<Expr>,
     },
 }

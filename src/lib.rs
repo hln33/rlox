@@ -71,6 +71,6 @@ fn run(source: String, interpreter: &mut Interpreter) {
 }
 
 // calling code will throw error
-pub fn print_error(line: u64, location: String, message: String) {
+pub fn print_error(line: u64, location: String, message: &str) {
     eprintln!("[line {line}] Error {location}: {message}");
 }

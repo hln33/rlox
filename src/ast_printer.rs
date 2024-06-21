@@ -6,11 +6,11 @@ use crate::{
 pub struct AstPrinter {}
 
 impl AstPrinter {
-    pub fn print(&self, expr: &Expr) -> String {
+    pub fn print(&mut self, expr: &Expr) -> String {
         self.visit_expr(expr)
     }
 
-    fn parenthesize(&self, name: &str, exprs: Vec<&Expr>) -> String {
+    fn parenthesize(&mut self, name: &str, exprs: Vec<&Expr>) -> String {
         let mut string = String::from("(");
         string.push_str(name);
 
@@ -25,7 +25,7 @@ impl AstPrinter {
 }
 
 impl Visitor<String> for AstPrinter {
-    fn visit_expr(&self, expr: &Expr) -> String {
+    fn visit_expr(&mut self, expr: &Expr) -> String {
         match expr {
             Expr::Grouping { expression } => self.parenthesize("group", vec![expression]),
             Expr::Unary { operator, right } => self.parenthesize(&operator.lexeme, vec![right]),
@@ -41,6 +41,7 @@ impl Visitor<String> for AstPrinter {
                 right,
             } => self.parenthesize(&operator.lexeme, vec![left, right]),
             Expr::Variable { name } => todo!(),
+            Expr::Assign { name, value } => todo!(),
         }
     }
 }
@@ -71,6 +72,6 @@ pub fn test_ast_print() {
         }),
     };
 
-    let printer = AstPrinter {};
+    let mut printer = AstPrinter {};
     println!("{}", printer.print(&expression));
 }
