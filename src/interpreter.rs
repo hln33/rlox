@@ -1,4 +1,8 @@
-use std::{cell::RefCell, fmt::Display, rc::Rc};
+use std::{
+    cell::RefCell,
+    fmt::{Arguments, Display},
+    rc::Rc,
+};
 
 use crate::{
     environment::Environment,
@@ -35,14 +39,28 @@ impl Display for Value {
     }
 }
 
+trait Logger {
+    fn print(&mut self, value: Arguments);
+}
+
+struct StdoutLogger;
+
+impl Logger for StdoutLogger {
+    fn print(&mut self, value: Arguments) {
+        println!("{}", value)
+    }
+}
+
 pub struct Interpreter {
     environment: Rc<RefCell<Environment>>,
+    logger: Box<dyn Logger>,
 }
 
 impl Interpreter {
     pub fn new() -> Interpreter {
         Interpreter {
             environment: Rc::new(RefCell::new(Environment::new_global())),
+            logger: Box::new(StdoutLogger),
         }
     }
 
@@ -92,7 +110,8 @@ impl Interpreter {
 
     fn visit_print_stmt(&mut self, expr: &Expr) -> Result<(), RuntimeError> {
         let value = self.evaluate(expr)?;
-        println!("{}", value);
+        // println!("{}", value);
+        self.logger.print(format_args!("{}", value));
         Ok(())
     }
 
@@ -281,6 +300,275 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
 
                 self.execute_block(statements, local_env)
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::vec;
+
+    use super::*;
+
+    struct MockLogger {
+        logs: Rc<RefCell<Vec<String>>>,
+    }
+    impl MockLogger {
+        fn new() -> MockLogger {
+            MockLogger {
+                logs: Rc::new(RefCell::new(vec![])),
+            }
+        }
+    }
+    impl Logger for MockLogger {
+        fn print(&mut self, value: Arguments) {
+            self.logs.borrow_mut().push(value.to_string());
+        }
+    }
+
+    #[test]
+    fn variable_declaration_and_assignment() {
+        let mut interpreter = Interpreter::new();
+        let variable_token = Token {
+            token_type: TokenType::Identifier,
+            lexeme: "x".to_string(),
+            literal: Literal::None,
+            line: 1,
+        };
+
+        // declaration
+        let var_stmt = Stmt::Var {
+            name: variable_token.clone(),
+            initializer: Some(Expr::Literal {
+                value: Literal::Number(10.0),
+            }),
+        };
+        assert!(interpreter.execute(&var_stmt).is_ok());
+
+        let result = interpreter.environment.borrow().get(&variable_token);
+        assert_eq!(result.unwrap().to_string(), "10");
+
+        // assignment
+        let assign_stmt = Stmt::Expression(Expr::Assign {
+            name: variable_token.clone(),
+            value: Box::new(Expr::Literal {
+                value: Literal::Number(20.5),
+            }),
+        });
+        assert!(interpreter.execute(&assign_stmt).is_ok());
+
+        // check that variable got updated
+        let result = interpreter.environment.borrow().get(&variable_token);
+        assert_eq!(result.unwrap().to_string(), "20.5");
+    }
+
+    #[test]
+    fn expression_evaluation() {
+        let mut interpreter = Interpreter::new();
+
+        // Assuming you have defined a helper function or builder for creating expressions
+        let expr = Expr::Binary {
+            left: Box::new(Expr::Literal {
+                value: Literal::Number(10.0),
+            }),
+            operator: Token {
+                token_type: TokenType::Plus,
+                lexeme: "+".to_string(),
+                literal: Literal::None,
+                line: 1,
+            },
+            right: Box::new(Expr::Literal {
+                value: Literal::Number(5.0),
+            }),
+        };
+
+        let value = interpreter.evaluate(&expr).unwrap();
+        assert_eq!(value.to_string(), "15");
+    }
+
+    #[test]
+    fn block_execution() {
+        let mut interpreter = Interpreter::new();
+
+        let stmts = vec![
+            Stmt::Var {
+                name: Token {
+                    token_type: TokenType::Identifier,
+                    lexeme: "x".to_string(),
+                    literal: Literal::None,
+                    line: 1,
+                },
+                initializer: Some(Expr::Literal {
+                    value: Literal::Number(10.0),
+                }),
+            },
+            Stmt::Var {
+                name: Token {
+                    token_type: TokenType::Identifier,
+                    lexeme: "x".to_string(),
+                    literal: Literal::None,
+                    line: 1,
+                },
+                initializer: Some(Expr::Literal {
+                    value: Literal::Number(20.0),
+                }),
+            },
+            Stmt::Expression(Expr::Binary {
+                left: Box::new(Expr::Variable {
+                    name: Token {
+                        token_type: TokenType::Identifier,
+                        lexeme: "x".to_string(),
+                        literal: Literal::None,
+                        line: 3,
+                    },
+                }),
+                operator: Token {
+                    token_type: TokenType::Plus,
+                    lexeme: "+".to_string(),
+                    literal: Literal::None,
+                    line: 3,
+                },
+                right: Box::new(Expr::Variable {
+                    name: Token {
+                        token_type: TokenType::Identifier,
+                        lexeme: "x".to_string(),
+                        literal: Literal::None,
+                        line: 1,
+                    },
+                }),
+            }),
+        ];
+
+        assert!(interpreter
+            .execute_block(&stmts, interpreter.environment.clone())
+            .is_ok());
+    }
+
+    #[test]
+    fn variable_scoping() {
+        let logger = Box::new(MockLogger::new());
+        let logs = logger.logs.clone();
+
+        let mut interpreter = Interpreter::new();
+        interpreter.logger = logger;
+
+        // these are used for print statements, the line number should not matter
+        let a = Token {
+            token_type: TokenType::Identifier,
+            lexeme: "a".to_string(),
+            literal: Literal::None,
+            line: 9999999,
+        };
+        let b = Token {
+            token_type: TokenType::Identifier,
+            lexeme: "b".to_string(),
+            literal: Literal::None,
+            line: 9999999,
+        };
+        let c = Token {
+            token_type: TokenType::Identifier,
+            lexeme: "c".to_string(),
+            literal: Literal::None,
+            line: 9999999,
+        };
+
+        let statements = vec![
+            Stmt::Var {
+                name: Token {
+                    token_type: TokenType::Identifier,
+                    lexeme: "a".to_string(),
+                    literal: Literal::None,
+                    line: 1,
+                },
+                initializer: Some(Expr::Literal {
+                    value: Literal::String(String::from("global a")),
+                }),
+            },
+            Stmt::Var {
+                name: Token {
+                    token_type: TokenType::Identifier,
+                    lexeme: "b".to_string(),
+                    literal: Literal::None,
+                    line: 2,
+                },
+                initializer: Some(Expr::Literal {
+                    value: Literal::String(String::from("global b")),
+                }),
+            },
+            Stmt::Var {
+                name: Token {
+                    token_type: TokenType::Identifier,
+                    lexeme: "c".to_string(),
+                    literal: Literal::None,
+                    line: 3,
+                },
+                initializer: Some(Expr::Literal {
+                    value: Literal::String(String::from("global c")),
+                }),
+            },
+            Stmt::Block(vec![
+                Stmt::Var {
+                    name: Token {
+                        token_type: TokenType::Identifier,
+                        lexeme: "a".to_string(),
+                        literal: Literal::None,
+                        line: 5,
+                    },
+                    initializer: Some(Expr::Literal {
+                        value: Literal::String(String::from("outer a")),
+                    }),
+                },
+                Stmt::Var {
+                    name: Token {
+                        token_type: TokenType::Identifier,
+                        lexeme: "b".to_string(),
+                        literal: Literal::None,
+                        line: 6,
+                    },
+                    initializer: Some(Expr::Literal {
+                        value: Literal::String(String::from("outer b")),
+                    }),
+                },
+                Stmt::Block(vec![
+                    Stmt::Var {
+                        name: Token {
+                            token_type: TokenType::Identifier,
+                            lexeme: "a".to_string(),
+                            literal: Literal::None,
+                            line: 8,
+                        },
+                        initializer: Some(Expr::Literal {
+                            value: Literal::String(String::from("inner a")),
+                        }),
+                    },
+                    Stmt::Print(Expr::Variable { name: a.clone() }),
+                    Stmt::Print(Expr::Variable { name: b.clone() }),
+                    Stmt::Print(Expr::Variable { name: c.clone() }),
+                ]),
+                Stmt::Print(Expr::Variable { name: a.clone() }),
+                Stmt::Print(Expr::Variable { name: b.clone() }),
+                Stmt::Print(Expr::Variable { name: c.clone() }),
+            ]),
+            Stmt::Print(Expr::Variable { name: a.clone() }),
+            Stmt::Print(Expr::Variable { name: b.clone() }),
+            Stmt::Print(Expr::Variable { name: c.clone() }),
+        ];
+
+        interpreter.interpret(statements);
+
+        let expected_logs = vec![
+            String::from("inner a"),
+            String::from("outer b"),
+            String::from("global c"),
+            String::from("outer a"),
+            String::from("outer b"),
+            String::from("global c"),
+            String::from("global a"),
+            String::from("global b"),
+            String::from("global c"),
+        ];
+        for (index, log) in logs.borrow().iter().enumerate() {
+            assert_eq!(log.to_owned(), expected_logs[index]);
         }
     }
 }
