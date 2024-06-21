@@ -1,7 +1,7 @@
-use std::{fmt::Display, rc::Rc};
+use std::{cell::RefCell, fmt::Display, rc::Rc};
 
 use crate::{
-    environment::{self, Environment},
+    environment::Environment,
     expr::{self, Expr},
     scanner::{Literal, Token, TokenType},
     stmt::{self, Stmt},
@@ -36,13 +36,13 @@ impl Display for Value {
 }
 
 pub struct Interpreter {
-    environment: Environment,
+    environment: Rc<RefCell<Environment>>,
 }
 
 impl Interpreter {
     pub fn new() -> Interpreter {
         Interpreter {
-            environment: Environment::new_global(),
+            environment: Rc::new(RefCell::new(Environment::new_global())),
         }
     }
 
@@ -66,14 +66,14 @@ impl Interpreter {
     fn execute_block(
         &mut self,
         statements: &Vec<Stmt>,
-        environment: Environment,
+        environment: Rc<RefCell<Environment>>,
     ) -> Result<(), RuntimeError> {
-        let previous = self.environment;
+        let previous = self.environment.clone();
 
         self.environment = environment;
 
         for statement in statements {
-            self.execute(&statement);
+            let _ = self.execute(statement);
         }
 
         self.environment = previous;
@@ -81,6 +81,12 @@ impl Interpreter {
     }
 
     fn visit_expr_stmt(&mut self, expr: &Expr) -> Result<(), RuntimeError> {
+        // let value = self.evaluate(expr);
+        // match value {
+        //     Ok(value) => println!("{}", value),
+        //     Err(_) => todo!(),
+        // }
+
         self.evaluate(expr).map(|_| ())
     }
 
@@ -100,17 +106,27 @@ impl Interpreter {
             value = self.evaluate(expr)?;
         }
 
-        self.environment.define(name.lexeme.clone(), value);
+        // !!!!!!!!!
+        self.environment
+            .borrow_mut()
+            .define(name.lexeme.clone(), value);
+        // self.environment.define(name.lexeme.clone(), value);
+
         Ok(())
     }
 
     fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> Result<Value, RuntimeError> {
         let value = self.evaluate(value)?;
 
-        match self.environment.assign(name, value.clone()) {
+        // !!!!!!!!!!!!!!!!!!!!!
+        match self.environment.borrow_mut().assign(name, value.clone()) {
             Ok(_) => Ok(value),
             Err(e) => Err(e),
         }
+        // match self.environment.assign(name, value.clone()) {
+        //     Ok(_) => Ok(value),
+        //     Err(e) => Err(e),
+        // }
     }
 
     fn visit_binary(
@@ -195,7 +211,9 @@ impl Interpreter {
     }
 
     fn visit_var_expr(&self, name: &Token) -> Result<Value, RuntimeError> {
-        self.environment.get(name)
+        // !!!!!!!!!!!!!!!!!!!!!!!!!
+        self.environment.borrow().get(name)
+        // self.environment.get(name)
     }
 
     fn number_operand_error(operator: &Token) -> RuntimeError {
@@ -255,9 +273,12 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
             Stmt::Print(expr) => self.visit_print_stmt(expr),
             Stmt::Var { name, initializer } => self.visit_var_stmt(name, initializer),
             Stmt::Block(statements) => {
-                todo!();
+                let env_ref = self.environment.clone();
 
-                let local_env = Environment::new_local(Some(Box::new(self.environment)));
+                let enclosing = Some(env_ref);
+
+                let local_env = Rc::new(RefCell::new(Environment::new_local(enclosing)));
+
                 self.execute_block(statements, local_env)
             }
         }

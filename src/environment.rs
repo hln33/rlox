@@ -1,8 +1,12 @@
 use crate::{interpreter::Value, scanner::Token, RuntimeError};
-use std::collections::{hash_map::Entry, HashMap};
+use std::{
+    cell::RefCell,
+    collections::{hash_map::Entry, HashMap},
+    rc::Rc,
+};
 
 pub struct Environment {
-    enclosing: Option<Box<Environment>>,
+    enclosing: Option<Rc<RefCell<Environment>>>,
     values: HashMap<String, Value>,
 }
 
@@ -14,7 +18,7 @@ impl Environment {
         }
     }
 
-    pub fn new_local(enclosing: Option<Box<Environment>>) -> Environment {
+    pub fn new_local(enclosing: Option<Rc<RefCell<Environment>>>) -> Environment {
         Environment {
             enclosing,
             values: HashMap::new(),
@@ -31,7 +35,7 @@ impl Environment {
         }
 
         if let Some(enclosing) = &self.enclosing {
-            return enclosing.get(name);
+            return enclosing.borrow().get(name);
         }
 
         Err(RuntimeError {
@@ -47,7 +51,7 @@ impl Environment {
         }
 
         if let Some(enclosing) = &mut self.enclosing {
-            return enclosing.assign(name, value);
+            return enclosing.borrow_mut().assign(name, value);
         }
 
         Err(RuntimeError {
