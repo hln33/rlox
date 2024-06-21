@@ -55,7 +55,7 @@ impl Interpreter {
         }
     }
 
-    fn evaluate(&self, expr: &Expr) -> Result<Value, RuntimeError> {
+    fn evaluate(&mut self, expr: &Expr) -> Result<Value, RuntimeError> {
         expr::Visitor::visit_expr(self, expr)
     }
 
@@ -63,11 +63,11 @@ impl Interpreter {
         stmt::Visitor::visit_stmt(self, stmt)
     }
 
-    fn visit_expr_stmt(&self, expr: &Expr) -> Result<(), RuntimeError> {
+    fn visit_expr_stmt(&mut self, expr: &Expr) -> Result<(), RuntimeError> {
         self.evaluate(expr).map(|_| ())
     }
 
-    fn visit_print_stmt(&self, expr: &Expr) -> Result<(), RuntimeError> {
+    fn visit_print_stmt(&mut self, expr: &Expr) -> Result<(), RuntimeError> {
         let value = self.evaluate(expr)?;
         println!("{}", value);
         Ok(())
@@ -87,8 +87,15 @@ impl Interpreter {
         Ok(())
     }
 
+    fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> Result<Value, RuntimeError> {
+        let value = self.evaluate(value)?;
+
+        self.environment.assign(name.clone(), value.clone());
+        Ok(value)
+    }
+
     fn visit_binary(
-        &self,
+        &mut self,
         left: &Expr,
         operator: &Token,
         right: &Expr,
@@ -155,7 +162,7 @@ impl Interpreter {
         }
     }
 
-    fn visit_unary(&self, operator: &Token, right: &Expr) -> Result<Value, RuntimeError> {
+    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> Result<Value, RuntimeError> {
         let right_expr = self.evaluate(right)?;
 
         match operator.token_type {
@@ -206,7 +213,7 @@ impl Interpreter {
 }
 
 impl expr::Visitor<Result<Value, RuntimeError>> for Interpreter {
-    fn visit_expr(&self, expr: &Expr) -> Result<Value, RuntimeError> {
+    fn visit_expr(&mut self, expr: &Expr) -> Result<Value, RuntimeError> {
         match expr {
             Expr::Binary {
                 left,
@@ -217,6 +224,7 @@ impl expr::Visitor<Result<Value, RuntimeError>> for Interpreter {
             Expr::Literal { value } => Ok(self.visit_literal(value)),
             Expr::Unary { operator, right } => self.visit_unary(operator, right),
             Expr::Variable { name } => self.visit_var_expr(name),
+            Expr::Assign { name, value } => self.visit_assign_expr(name, value),
         }
     }
 }
