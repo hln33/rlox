@@ -33,6 +33,10 @@ pub fn run_file(path: &str) {
     let _bytes = fs::read(path).expect("file to be readable");
     // run code
 
+    let mut interpreter = Interpreter::new();
+    let contents = fs::read_to_string(path).expect("file to be readable");
+    run(contents, &mut interpreter);
+
     unsafe {
         if HAD_RUNTIME_ERROR {
             process::exit(70)
