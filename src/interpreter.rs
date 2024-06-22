@@ -1,12 +1,9 @@
-use std::{
-    cell::RefCell,
-    fmt::{Arguments, Display},
-    rc::Rc,
-};
+use std::{cell::RefCell, fmt::Display, rc::Rc};
 
 use crate::{
     environment::Environment,
     expr::{self, Expr},
+    logger::{Logger, StdoutLogger},
     scanner::{Literal, Token, TokenType},
     stmt::{self, Stmt},
     RuntimeError,
@@ -36,18 +33,6 @@ impl Display for Value {
         }
 
         write!(f, "{}", s)
-    }
-}
-
-trait Logger {
-    fn print(&mut self, value: Arguments);
-}
-
-struct StdoutLogger;
-
-impl Logger for StdoutLogger {
-    fn print(&mut self, value: Arguments) {
-        println!("{}", value)
     }
 }
 
@@ -99,19 +84,13 @@ impl Interpreter {
     }
 
     fn visit_expr_stmt(&mut self, expr: &Expr) -> Result<(), RuntimeError> {
-        // let value = self.evaluate(expr);
-        // match value {
-        //     Ok(value) => println!("{}", value),
-        //     Err(_) => todo!(),
-        // }
-
         self.evaluate(expr).map(|_| ())
     }
 
     fn visit_print_stmt(&mut self, expr: &Expr) -> Result<(), RuntimeError> {
         let value = self.evaluate(expr)?;
-        // println!("{}", value);
         self.logger.print(format_args!("{}", value));
+
         Ok(())
     }
 
@@ -125,27 +104,19 @@ impl Interpreter {
             value = self.evaluate(expr)?;
         }
 
-        // !!!!!!!!!
         self.environment
             .borrow_mut()
             .define(name.lexeme.clone(), value);
-        // self.environment.define(name.lexeme.clone(), value);
-
         Ok(())
     }
 
     fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> Result<Value, RuntimeError> {
         let value = self.evaluate(value)?;
 
-        // !!!!!!!!!!!!!!!!!!!!!
         match self.environment.borrow_mut().assign(name, value.clone()) {
             Ok(_) => Ok(value),
             Err(e) => Err(e),
         }
-        // match self.environment.assign(name, value.clone()) {
-        //     Ok(_) => Ok(value),
-        //     Err(e) => Err(e),
-        // }
     }
 
     fn visit_binary(
@@ -230,9 +201,7 @@ impl Interpreter {
     }
 
     fn visit_var_expr(&self, name: &Token) -> Result<Value, RuntimeError> {
-        // !!!!!!!!!!!!!!!!!!!!!!!!!
         self.environment.borrow().get(name)
-        // self.environment.get(name)
     }
 
     fn number_operand_error(operator: &Token) -> RuntimeError {
@@ -306,7 +275,7 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
 
 #[cfg(test)]
 mod tests {
-    use std::vec;
+    use std::{fmt::Arguments, vec};
 
     use super::*;
 
