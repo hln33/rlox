@@ -133,7 +133,7 @@ impl Interpreter {
         }
     }
 
-    fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<Value> {
+    fn visit_binary_expr(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<Value> {
         let left = self.evaluate(left)?;
         let right = self.evaluate(right)?;
 
@@ -187,7 +187,7 @@ impl Interpreter {
         }
     }
 
-    fn visit_literal(&self, literal: &Literal) -> Value {
+    fn visit_literal_expr(&self, literal: &Literal) -> Value {
         match literal {
             Literal::String(value) => Value::String(value.clone()),
             Literal::Number(value) => Value::Number(*value),
@@ -210,7 +210,7 @@ impl Interpreter {
         self.evaluate(right)
     }
 
-    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> Result<Value> {
+    fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<Value> {
         let right_expr = self.evaluate(right)?;
 
         match operator.token_type {
@@ -267,10 +267,10 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                 left,
                 operator,
                 right,
-            } => self.visit_binary(left, operator, right),
+            } => self.visit_binary_expr(left, operator, right),
             Expr::Grouping { expression } => self.evaluate(expression),
-            Expr::Literal { value } => Ok(self.visit_literal(value)),
-            Expr::Unary { operator, right } => self.visit_unary(operator, right),
+            Expr::Literal { value } => Ok(self.visit_literal_expr(value)),
+            Expr::Unary { operator, right } => self.visit_unary_expr(operator, right),
             Expr::Variable { name } => self.visit_var_expr(name),
             Expr::Assign { name, value } => self.visit_assign_expr(name, value),
             Expr::Logical {
