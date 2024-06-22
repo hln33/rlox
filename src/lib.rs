@@ -8,6 +8,7 @@ use scanner::{Scanner, Token};
 mod environment;
 mod expr;
 mod interpreter;
+mod logger;
 mod parser;
 mod scanner;
 mod stmt;
