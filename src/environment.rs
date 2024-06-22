@@ -5,24 +5,26 @@ use std::{
     rc::Rc,
 };
 
+pub type EnvRef = Rc<RefCell<Environment>>;
+
 pub struct Environment {
-    enclosing: Option<Rc<RefCell<Environment>>>,
+    enclosing: Option<EnvRef>,
     values: HashMap<String, Value>,
 }
 
 impl Environment {
-    pub fn new_global() -> Environment {
-        Environment {
+    pub fn new_global() -> EnvRef {
+        Rc::new(RefCell::new(Environment {
             enclosing: None,
             values: HashMap::new(),
-        }
+        }))
     }
 
-    pub fn new_local(enclosing: Option<Rc<RefCell<Environment>>>) -> Environment {
-        Environment {
-            enclosing,
+    pub fn new_local(enclosing: EnvRef) -> EnvRef {
+        Rc::new(RefCell::new(Environment {
+            enclosing: Some(enclosing),
             values: HashMap::new(),
-        }
+        }))
     }
 
     pub fn define(&mut self, name: String, value: Value) {

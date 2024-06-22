@@ -1,7 +1,7 @@
-use std::{cell::RefCell, fmt::Display, rc::Rc};
+use std::fmt::Display;
 
 use crate::{
-    environment::Environment,
+    environment::{EnvRef, Environment},
     expr::{self, Expr},
     logger::{Logger, StdoutLogger},
     scanner::{Literal, Token, TokenType},
@@ -39,14 +39,14 @@ impl Display for Value {
 type Result<T> = std::result::Result<T, RuntimeError>;
 
 pub struct Interpreter {
-    environment: Rc<RefCell<Environment>>,
+    environment: EnvRef,
     logger: Box<dyn Logger>,
 }
 
 impl Interpreter {
     pub fn new() -> Interpreter {
         Interpreter {
-            environment: Rc::new(RefCell::new(Environment::new_global())),
+            environment: Environment::new_global(),
             logger: Box::new(StdoutLogger),
         }
     }
@@ -68,11 +68,7 @@ impl Interpreter {
         stmt::Visitor::visit_stmt(self, stmt)
     }
 
-    fn execute_block(
-        &mut self,
-        statements: &Vec<Stmt>,
-        environment: Rc<RefCell<Environment>>,
-    ) -> Result<()> {
+    fn execute_block(&mut self, statements: &Vec<Stmt>, environment: EnvRef) -> Result<()> {
         let previous = self.environment.clone();
 
         self.environment = environment;
@@ -254,12 +250,7 @@ impl stmt::Visitor<Result<()>> for Interpreter {
             Stmt::Print(expr) => self.visit_print_stmt(expr),
             Stmt::Var { name, initializer } => self.visit_var_stmt(name, initializer),
             Stmt::Block(statements) => {
-                let env_ref = self.environment.clone();
-
-                let enclosing = Some(env_ref);
-
-                let local_env = Rc::new(RefCell::new(Environment::new_local(enclosing)));
-
+                let local_env = Environment::new_local(self.environment.clone());
                 self.execute_block(statements, local_env)
             }
         }
@@ -268,7 +259,7 @@ impl stmt::Visitor<Result<()>> for Interpreter {
 
 #[cfg(test)]
 mod tests {
-    use std::{fmt::Arguments, vec};
+    use std::{cell::RefCell, fmt::Arguments, rc::Rc, vec};
 
     use super::*;
 
