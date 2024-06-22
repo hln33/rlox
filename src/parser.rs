@@ -125,7 +125,7 @@ impl Parser<'_> {
     }
 
     fn assignment(&mut self) -> Result<Expr> {
-        let expr = self.equality()?;
+        let expr = self.or()?;
 
         if self.match_token(&[TokenType::Equal]) {
             let equals = self.previous();
@@ -141,6 +141,14 @@ impl Parser<'_> {
         }
 
         Ok(expr)
+    }
+
+    fn or(&mut self) -> Result<Expr> {
+        self.parse_logical_op(&[TokenType::Or], |parser| parser.and())
+    }
+
+    fn and(&mut self) -> Result<Expr> {
+        self.parse_logical_op(&[TokenType::And], |parser| parser.equality())
     }
 
     fn equality(&mut self) -> Result<Expr> {
@@ -240,6 +248,29 @@ impl Parser<'_> {
             let operator = self.previous();
             let right = parse_next_level(self)?;
             expr = Expr::Binary {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            }
+        }
+
+        Ok(expr)
+    }
+
+    fn parse_logical_op<F>(
+        &mut self,
+        operators: &[TokenType],
+        mut parse_next_level: F,
+    ) -> Result<Expr>
+    where
+        F: FnMut(&mut Self) -> Result<Expr>,
+    {
+        let mut expr = parse_next_level(self)?;
+
+        while self.match_token(operators) {
+            let operator = self.previous();
+            let right = parse_next_level(self)?;
+            expr = Expr::Logical {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),

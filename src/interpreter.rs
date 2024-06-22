@@ -96,7 +96,7 @@ impl Interpreter {
         then_branch: &Stmt,
         else_branch: &Option<Box<Stmt>>,
     ) -> Result<()> {
-        if Interpreter::is_truthy(self.evaluate(condition)?) {
+        if Interpreter::is_truthy(&self.evaluate(condition)?) {
             return self.execute(then_branch);
         }
         match else_branch {
@@ -196,6 +196,20 @@ impl Interpreter {
         }
     }
 
+    fn visit_logical_expr(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<Value> {
+        let left = self.evaluate(left)?;
+
+        if operator.token_type == TokenType::Or {
+            if Interpreter::is_truthy(&left) {
+                return Ok(left);
+            }
+        } else if !Interpreter::is_truthy(&left) {
+            return Ok(left);
+        }
+
+        self.evaluate(right)
+    }
+
     fn visit_unary(&mut self, operator: &Token, right: &Expr) -> Result<Value> {
         let right_expr = self.evaluate(right)?;
 
@@ -204,7 +218,7 @@ impl Interpreter {
                 Value::Number(value) => Ok(Value::Number(-value)),
                 _ => Err(Interpreter::number_operand_error(operator)),
             },
-            TokenType::Bang => Ok(Value::Boolean(!Interpreter::is_truthy(right_expr))),
+            TokenType::Bang => Ok(Value::Boolean(!Interpreter::is_truthy(&right_expr))),
             _ => Err(Interpreter::number_operand_error(operator)),
         }
     }
@@ -227,10 +241,10 @@ impl Interpreter {
         }
     }
 
-    fn is_truthy(value: Value) -> bool {
+    fn is_truthy(value: &Value) -> bool {
         match value {
             Value::Nil => false,
-            Value::Boolean(value) => value,
+            Value::Boolean(value) => *value,
             _ => true,
         }
     }
@@ -259,6 +273,11 @@ impl expr::Visitor<Result<Value>> for Interpreter {
             Expr::Unary { operator, right } => self.visit_unary(operator, right),
             Expr::Variable { name } => self.visit_var_expr(name),
             Expr::Assign { name, value } => self.visit_assign_expr(name, value),
+            Expr::Logical {
+                left,
+                operator,
+                right,
+            } => self.visit_logical_expr(left, operator, right),
         }
     }
 }
