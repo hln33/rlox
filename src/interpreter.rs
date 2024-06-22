@@ -36,6 +36,8 @@ impl Display for Value {
     }
 }
 
+type Result<T> = std::result::Result<T, RuntimeError>;
+
 pub struct Interpreter {
     environment: Rc<RefCell<Environment>>,
     logger: Box<dyn Logger>,
@@ -58,11 +60,11 @@ impl Interpreter {
         }
     }
 
-    fn evaluate(&mut self, expr: &Expr) -> Result<Value, RuntimeError> {
+    fn evaluate(&mut self, expr: &Expr) -> Result<Value> {
         expr::Visitor::visit_expr(self, expr)
     }
 
-    fn execute(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
+    fn execute(&mut self, stmt: &Stmt) -> Result<()> {
         stmt::Visitor::visit_stmt(self, stmt)
     }
 
@@ -70,7 +72,7 @@ impl Interpreter {
         &mut self,
         statements: &Vec<Stmt>,
         environment: Rc<RefCell<Environment>>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<()> {
         let previous = self.environment.clone();
 
         self.environment = environment;
@@ -83,22 +85,18 @@ impl Interpreter {
         Ok(())
     }
 
-    fn visit_expr_stmt(&mut self, expr: &Expr) -> Result<(), RuntimeError> {
+    fn visit_expr_stmt(&mut self, expr: &Expr) -> Result<()> {
         self.evaluate(expr).map(|_| ())
     }
 
-    fn visit_print_stmt(&mut self, expr: &Expr) -> Result<(), RuntimeError> {
+    fn visit_print_stmt(&mut self, expr: &Expr) -> Result<()> {
         let value = self.evaluate(expr)?;
         self.logger.print(format_args!("{}", value));
 
         Ok(())
     }
 
-    fn visit_var_stmt(
-        &mut self,
-        name: &Token,
-        initializer: &Option<Expr>,
-    ) -> Result<(), RuntimeError> {
+    fn visit_var_stmt(&mut self, name: &Token, initializer: &Option<Expr>) -> Result<()> {
         let mut value = Value::Nil;
         if let Some(expr) = initializer {
             value = self.evaluate(expr)?;
@@ -110,7 +108,7 @@ impl Interpreter {
         Ok(())
     }
 
-    fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> Result<Value, RuntimeError> {
+    fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> Result<Value> {
         let value = self.evaluate(value)?;
 
         match self.environment.borrow_mut().assign(name, value.clone()) {
@@ -119,12 +117,7 @@ impl Interpreter {
         }
     }
 
-    fn visit_binary(
-        &mut self,
-        left: &Expr,
-        operator: &Token,
-        right: &Expr,
-    ) -> Result<Value, RuntimeError> {
+    fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<Value> {
         let left = self.evaluate(left)?;
         let right = self.evaluate(right)?;
 
@@ -187,7 +180,7 @@ impl Interpreter {
         }
     }
 
-    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> Result<Value, RuntimeError> {
+    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> Result<Value> {
         let right_expr = self.evaluate(right)?;
 
         match operator.token_type {
@@ -200,7 +193,7 @@ impl Interpreter {
         }
     }
 
-    fn visit_var_expr(&self, name: &Token) -> Result<Value, RuntimeError> {
+    fn visit_var_expr(&self, name: &Token) -> Result<Value> {
         self.environment.borrow().get(name)
     }
 
@@ -237,8 +230,8 @@ impl Interpreter {
     }
 }
 
-impl expr::Visitor<Result<Value, RuntimeError>> for Interpreter {
-    fn visit_expr(&mut self, expr: &Expr) -> Result<Value, RuntimeError> {
+impl expr::Visitor<Result<Value>> for Interpreter {
+    fn visit_expr(&mut self, expr: &Expr) -> Result<Value> {
         match expr {
             Expr::Binary {
                 left,
@@ -254,8 +247,8 @@ impl expr::Visitor<Result<Value, RuntimeError>> for Interpreter {
     }
 }
 
-impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
-    fn visit_stmt(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
+impl stmt::Visitor<Result<()>> for Interpreter {
+    fn visit_stmt(&mut self, stmt: &Stmt) -> Result<()> {
         match stmt {
             Stmt::Expression(expr) => self.visit_expr_stmt(expr),
             Stmt::Print(expr) => self.visit_print_stmt(expr),

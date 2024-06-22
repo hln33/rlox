@@ -8,6 +8,8 @@ use crate::{
 #[derive(Debug)]
 struct ParseError;
 
+type Result<T> = std::result::Result<T, ParseError>;
+
 pub struct Parser<'a> {
     tokens: &'a Vec<Token>,
     current: usize,
@@ -28,7 +30,7 @@ impl Parser<'_> {
         statements
     }
 
-    fn expression(&mut self) -> Result<Expr, ParseError> {
+    fn expression(&mut self) -> Result<Expr> {
         self.assignment()
     }
 
@@ -48,7 +50,7 @@ impl Parser<'_> {
         }
     }
 
-    fn statement(&mut self) -> Result<Stmt, ParseError> {
+    fn statement(&mut self) -> Result<Stmt> {
         if self.match_token(&[TokenType::Print]) {
             return self.print_statment();
         }
@@ -60,13 +62,13 @@ impl Parser<'_> {
         self.expression_statement()
     }
 
-    fn print_statment(&mut self) -> Result<Stmt, ParseError> {
+    fn print_statment(&mut self) -> Result<Stmt> {
         let value = self.expression()?;
         let _ = self.consume(TokenType::Semicolon, "Expect ';' after value.");
         Ok(Stmt::Print(value))
     }
 
-    fn var_declaration(&mut self) -> Result<Stmt, ParseError> {
+    fn var_declaration(&mut self) -> Result<Stmt> {
         let name = self.consume(TokenType::Identifier, "Expect variable name.")?;
 
         let mut initializer = None;
@@ -81,7 +83,7 @@ impl Parser<'_> {
         Ok(Stmt::Var { name, initializer })
     }
 
-    fn expression_statement(&mut self) -> Result<Stmt, ParseError> {
+    fn expression_statement(&mut self) -> Result<Stmt> {
         let value = self.expression()?;
         let _ = self.consume(TokenType::Semicolon, "Expect ';' after expression.");
         Ok(Stmt::Expression(value))
@@ -100,7 +102,7 @@ impl Parser<'_> {
         statements
     }
 
-    fn assignment(&mut self) -> Result<Expr, ParseError> {
+    fn assignment(&mut self) -> Result<Expr> {
         let expr = self.equality()?;
 
         if self.match_token(&[TokenType::Equal]) {
@@ -119,13 +121,13 @@ impl Parser<'_> {
         Ok(expr)
     }
 
-    fn equality(&mut self) -> Result<Expr, ParseError> {
+    fn equality(&mut self) -> Result<Expr> {
         self.parse_binary_op(&[TokenType::BangEqual, TokenType::EqualEqual], |parser| {
             parser.comparison()
         })
     }
 
-    fn comparison(&mut self) -> Result<Expr, ParseError> {
+    fn comparison(&mut self) -> Result<Expr> {
         self.parse_binary_op(
             &[
                 TokenType::Greater,
@@ -137,19 +139,19 @@ impl Parser<'_> {
         )
     }
 
-    fn term(&mut self) -> Result<Expr, ParseError> {
+    fn term(&mut self) -> Result<Expr> {
         self.parse_binary_op(&[TokenType::Minus, TokenType::Plus], |parser| {
             parser.factor()
         })
     }
 
-    fn factor(&mut self) -> Result<Expr, ParseError> {
+    fn factor(&mut self) -> Result<Expr> {
         self.parse_binary_op(&[TokenType::Slash, TokenType::Star], |parser| {
             parser.unary()
         })
     }
 
-    fn unary(&mut self) -> Result<Expr, ParseError> {
+    fn unary(&mut self) -> Result<Expr> {
         if self.match_token(&[TokenType::Bang, TokenType::Minus]) {
             let operator = self.previous();
             let right = self.unary()?;
@@ -162,7 +164,7 @@ impl Parser<'_> {
         self.primary()
     }
 
-    fn primary(&mut self) -> Result<Expr, ParseError> {
+    fn primary(&mut self) -> Result<Expr> {
         if self.match_token(&[TokenType::False]) {
             return Ok(Expr::Literal {
                 value: Literal::Bool(false),
@@ -206,9 +208,9 @@ impl Parser<'_> {
         &mut self,
         operators: &[TokenType],
         mut parse_next_level: F,
-    ) -> Result<Expr, ParseError>
+    ) -> Result<Expr>
     where
-        F: FnMut(&mut Self) -> Result<Expr, ParseError>,
+        F: FnMut(&mut Self) -> Result<Expr>,
     {
         let mut expr = parse_next_level(self)?;
 
@@ -236,12 +238,12 @@ impl Parser<'_> {
         false
     }
 
-    fn consume(&mut self, token_type: TokenType, message: &str) -> Result<Token, ParseError> {
+    fn consume(&mut self, token_type: TokenType, message: &str) -> Result<Token> {
         if self.check(&token_type) {
             return Ok(self.advance());
         }
 
-        Err(self.error(self.peek().clone(), &message))
+        Err(self.error(self.peek().clone(), message))
     }
 
     fn check(&self, token_type: &TokenType) -> bool {
