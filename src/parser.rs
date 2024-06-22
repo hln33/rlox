@@ -59,6 +59,10 @@ impl Parser<'_> {
             return self.print_statment();
         }
 
+        if self.match_token(&[TokenType::While]) {
+            return self.while_statement();
+        }
+
         if self.match_token(&[TokenType::LeftBrace]) {
             return Ok(Stmt::Block(self.block()));
         }
@@ -103,6 +107,18 @@ impl Parser<'_> {
             "Expect ';' after variable declaration",
         );
         Ok(Stmt::Var { name, initializer })
+    }
+
+    fn while_statement(&mut self) -> Result<Stmt> {
+        let _ = self.consume(TokenType::LeftParen, "Expect '(' after ' while'");
+        let condition = self.expression()?;
+        let _ = self.consume(TokenType::RightParen, "Expect ')' after condition.");
+        let body = self.statement()?;
+
+        Ok(Stmt::While {
+            condition: Box::new(condition),
+            body: Box::new(body),
+        })
     }
 
     fn expression_statement(&mut self) -> Result<Stmt> {
