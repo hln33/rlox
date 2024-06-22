@@ -51,6 +51,10 @@ impl Parser<'_> {
     }
 
     fn statement(&mut self) -> Result<Stmt> {
+        if self.match_token(&[TokenType::If]) {
+            return self.if_statement();
+        }
+
         if self.match_token(&[TokenType::Print]) {
             return self.print_statment();
         }
@@ -60,6 +64,24 @@ impl Parser<'_> {
         }
 
         self.expression_statement()
+    }
+
+    fn if_statement(&mut self) -> Result<Stmt> {
+        let _ = self.consume(TokenType::LeftParen, "Expect '(' after 'if'.");
+        let condition = self.expression()?;
+        let _ = self.consume(TokenType::RightParen, "Expect ')' after if condition");
+
+        let then_branch = Box::new(self.statement()?);
+        let else_branch = match self.match_token(&[TokenType::Else]) {
+            true => Some(Box::new(self.statement()?)),
+            false => None,
+        };
+
+        Ok(Stmt::If {
+            condition,
+            then_branch,
+            else_branch,
+        })
     }
 
     fn print_statment(&mut self) -> Result<Stmt> {

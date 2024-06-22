@@ -81,8 +81,28 @@ impl Interpreter {
         Ok(())
     }
 
+    fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) -> Result<()> {
+        let local_env = Environment::new_local(self.environment.clone());
+        self.execute_block(statements, local_env)
+    }
+
     fn visit_expr_stmt(&mut self, expr: &Expr) -> Result<()> {
         self.evaluate(expr).map(|_| ())
+    }
+
+    fn visit_if_stmt(
+        &mut self,
+        condition: &Expr,
+        then_branch: &Stmt,
+        else_branch: &Option<Box<Stmt>>,
+    ) -> Result<()> {
+        if Interpreter::is_truthy(self.evaluate(condition)?) {
+            return self.execute(then_branch);
+        }
+        match else_branch {
+            Some(else_branch) => self.execute(else_branch),
+            None => Ok(()),
+        }
     }
 
     fn visit_print_stmt(&mut self, expr: &Expr) -> Result<()> {
@@ -249,10 +269,12 @@ impl stmt::Visitor<Result<()>> for Interpreter {
             Stmt::Expression(expr) => self.visit_expr_stmt(expr),
             Stmt::Print(expr) => self.visit_print_stmt(expr),
             Stmt::Var { name, initializer } => self.visit_var_stmt(name, initializer),
-            Stmt::Block(statements) => {
-                let local_env = Environment::new_local(self.environment.clone());
-                self.execute_block(statements, local_env)
-            }
+            Stmt::Block(statements) => self.visit_block_stmt(statements),
+            Stmt::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => self.visit_if_stmt(condition, then_branch, else_branch),
         }
     }
 }
