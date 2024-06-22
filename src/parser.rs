@@ -98,23 +98,22 @@ impl Parser<'_> {
         let _ = self.consume(TokenType::RightParen, "Expect ')' after for clauses");
 
         let mut body = self.statement()?;
-        if increment.is_some() {
-            body = Stmt::Block(vec![body, Stmt::Expression(increment.unwrap())])
+        if let Some(increment) = increment {
+            body = Stmt::Block(vec![body, Stmt::Expression(increment)])
         }
 
         if condition.is_none() {
-            let new_condition = Expr::Literal {
+            condition.replace(Expr::Literal {
                 value: Literal::Bool(true),
-            };
-            condition.replace(new_condition);
+            });
         }
         body = Stmt::While {
             condition: Box::new(condition.unwrap()),
             body: Box::new(body),
         };
 
-        if initializer.is_some() {
-            body = Stmt::Block(vec![initializer.unwrap(), body]);
+        if let Some(initializer) = initializer {
+            body = Stmt::Block(vec![initializer, body]);
         }
 
         Ok(body)
