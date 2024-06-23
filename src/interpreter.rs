@@ -286,6 +286,11 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                 operator,
                 right,
             } => self.visit_logical_expr(left, operator, right),
+            Expr::Call {
+                callee,
+                paren,
+                args,
+            } => todo!(),
         }
     }
 }
