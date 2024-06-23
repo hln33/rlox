@@ -1,40 +1,12 @@
-use std::fmt::Display;
-
 use crate::{
     environment::{EnvRef, Environment},
     expr::{self, Expr},
     logger::{Logger, StdoutLogger},
     scanner::{Literal, Token, TokenType},
     stmt::{self, Stmt},
+    value::{Callable, Value},
     RuntimeError,
 };
-
-#[derive(Clone)]
-pub enum Value {
-    Boolean(bool),
-    Number(f64),
-    String(String),
-    Nil,
-}
-
-impl Display for Value {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut s;
-        match self {
-            Value::Boolean(value) => s = value.to_string(),
-            Value::Number(value) => {
-                s = value.to_string();
-                if s.ends_with(".0") {
-                    s = s.strip_suffix(".0").unwrap().to_string();
-                }
-            }
-            Value::String(value) => s = value.clone(),
-            Value::Nil => s = String::from("nil"),
-        }
-
-        write!(f, "{}", s)
-    }
-}
 
 type Result<T> = std::result::Result<T, RuntimeError>;
 
@@ -195,6 +167,35 @@ impl Interpreter {
         }
     }
 
+    fn visit_call_expr(&mut self, callee: &Expr, paren: &Token, args: &Vec<Expr>) -> Result<Value> {
+        let callee = self.evaluate(callee)?;
+
+        let mut evaluated_args = vec![];
+        for arg in args {
+            evaluated_args.push(self.evaluate(arg)?);
+        }
+
+        match callee {
+            Value::Function | Value::Class => {
+                if evaluated_args.len() > callee.arity() {
+                    return Err(RuntimeError {
+                        token: paren.clone(),
+                        message: format!(
+                            "Expected {} arguments but got {}.",
+                            callee.arity(),
+                            evaluated_args.len()
+                        ),
+                    });
+                }
+                Ok(callee.call(self, evaluated_args))
+            }
+            _ => Err(RuntimeError {
+                token: paren.clone(),
+                message: String::from("Can only call functions and classes."),
+            }),
+        }
+    }
+
     fn visit_literal_expr(&self, literal: &Literal) -> Value {
         match literal {
             Literal::String(value) => Value::String(value.clone()),
@@ -290,7 +291,7 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                 callee,
                 paren,
                 args,
-            } => todo!(),
+            } => self.visit_call_expr(callee, paren, args),
         }
     }
 }

@@ -1,4 +1,4 @@
-use crate::{interpreter::Value, scanner::Token, RuntimeError};
+use crate::{scanner::Token, value::Value, RuntimeError};
 use std::{
     cell::RefCell,
     collections::{hash_map::Entry, HashMap},
