@@ -98,6 +98,7 @@ impl Parser<'_> {
         let _ = self.consume(TokenType::RightParen, "Expect ')' after for clauses");
 
         let mut body = self.statement()?;
+
         if let Some(increment) = increment {
             body = Stmt::Block(vec![body, Stmt::Expression(increment)])
         }
@@ -256,7 +257,46 @@ impl Parser<'_> {
             });
         }
 
-        self.primary()
+        self.call()
+    }
+
+    fn finish_call(&mut self, callee: Expr) -> Result<Expr> {
+        let mut args = vec![];
+
+        if !self.check(&TokenType::RightParen) {
+            loop {
+                if args.len() >= 255 {
+                    self.error(self.peek().clone(), "Can't have more than 255 arguments.");
+                }
+                args.push(self.expression()?);
+
+                if !self.match_token(&[TokenType::Comma]) {
+                    break;
+                };
+            }
+        }
+
+        let paren = self.consume(TokenType::RightParen, "Expect ')' after arguments.")?;
+
+        Ok(Expr::Call {
+            callee: Box::new(callee),
+            paren,
+            args,
+        })
+    }
+
+    fn call(&mut self) -> Result<Expr> {
+        let mut expr = self.primary()?;
+
+        loop {
+            if self.match_token(&[TokenType::LeftParen]) {
+                expr = self.finish_call(expr)?;
+            } else {
+                break;
+            }
+        }
+
+        Ok(expr)
     }
 
     fn primary(&mut self) -> Result<Expr> {
