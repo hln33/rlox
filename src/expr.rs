@@ -4,7 +4,7 @@ pub trait Visitor<T> {
     fn visit_expr(&mut self, expression: &Expr) -> T;
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Expr {
     Binary {
         left: Box<Expr>,
