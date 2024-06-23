@@ -7,23 +7,8 @@ pub enum Value {
     Boolean(bool),
     Number(f64),
     String(String),
-    Class,
-    Function,
+    Function(Function),
     Nil,
-}
-
-pub trait Callable {
-    fn arity(&self) -> usize;
-    fn call(&self, interpreter: &Interpreter, args: Vec<Value>) -> Value;
-}
-impl Callable for Value {
-    fn arity(&self) -> usize {
-        todo!()
-    }
-
-    fn call(&self, interpreter: &Interpreter, args: Vec<Value>) -> Value {
-        todo!()
-    }
 }
 
 impl Display for Value {
@@ -39,10 +24,30 @@ impl Display for Value {
             }
             Value::String(value) => s = value.clone(),
             Value::Nil => s = String::from("nil"),
-            Value::Class => todo!(),
-            Value::Function => todo!(),
+            Value::Function(_) => s = String::from("<fn>"),
         }
 
         write!(f, "{}", s)
+    }
+}
+
+pub trait Callable {
+    fn arity(&self) -> usize;
+    fn call(&self, interpreter: &mut Interpreter, args: Vec<Value>) -> Value;
+}
+
+#[derive(Clone)]
+pub struct Function {
+    pub arity: usize,
+    pub callable: fn(&mut Interpreter, Vec<Value>) -> Value,
+}
+
+impl Callable for Function {
+    fn arity(&self) -> usize {
+        self.arity
+    }
+
+    fn call(&self, interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
+        (self.callable)(interpreter, args)
     }
 }
