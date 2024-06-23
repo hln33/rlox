@@ -6,14 +6,14 @@ use crate::{
     logger::{Logger, StdoutLogger},
     scanner::{Literal, Token, TokenType},
     stmt::{self, Stmt},
-    value::{Callable, Function, Value},
+    value::{Callable, NativeFunction, Value},
     RuntimeError,
 };
 
 type Result<T> = std::result::Result<T, RuntimeError>;
 
 pub struct Interpreter {
-    globals: EnvRef,
+    pub globals: EnvRef,
     environment: EnvRef,
     logger: Box<dyn Logger>,
 }
@@ -21,10 +21,9 @@ pub struct Interpreter {
 impl Interpreter {
     pub fn new() -> Interpreter {
         let globals = Environment::new_global();
-
         globals.borrow_mut().define(
             "clock".to_string(),
-            Value::Function(Function {
+            Value::NativeFunction(NativeFunction {
                 arity: 0,
                 callable: |_, _| {
                     let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
@@ -34,7 +33,6 @@ impl Interpreter {
         );
 
         let environment = globals.clone();
-
         Interpreter {
             globals,
             environment,
@@ -59,7 +57,7 @@ impl Interpreter {
         stmt::Visitor::visit_stmt(self, stmt)
     }
 
-    fn execute_block(&mut self, statements: &Vec<Stmt>, environment: EnvRef) -> Result<()> {
+    pub fn execute_block(&mut self, statements: &Vec<Stmt>, environment: EnvRef) -> Result<()> {
         let previous = self.environment.clone();
 
         self.environment = environment;
@@ -208,6 +206,7 @@ impl Interpreter {
                 }
                 Ok(callee.call(self, evaluated_args))
             }
+            Value::NativeFunction(callee) => todo!(),
             _ => Err(RuntimeError {
                 token: paren.clone(),
                 message: String::from("Can only call functions and classes."),
@@ -328,6 +327,7 @@ impl stmt::Visitor<Result<()>> for Interpreter {
                 else_branch,
             } => self.visit_if_stmt(condition, then_branch, else_branch),
             Stmt::While { condition, body } => self.visit_while_stmt(condition, body),
+            Stmt::Function { name, params, body } => todo!(),
         }
     }
 }
