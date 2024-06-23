@@ -1,24 +1,43 @@
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use crate::{
     environment::{EnvRef, Environment},
     expr::{self, Expr},
     logger::{Logger, StdoutLogger},
     scanner::{Literal, Token, TokenType},
     stmt::{self, Stmt},
-    value::{Callable, Value},
+    value::{Callable, Function, Value},
     RuntimeError,
 };
 
 type Result<T> = std::result::Result<T, RuntimeError>;
 
 pub struct Interpreter {
+    globals: EnvRef,
     environment: EnvRef,
     logger: Box<dyn Logger>,
 }
 
 impl Interpreter {
     pub fn new() -> Interpreter {
+        let globals = Environment::new_global();
+
+        globals.borrow_mut().define(
+            "clock".to_string(),
+            Value::Function(Function {
+                arity: 0,
+                callable: |_, _| {
+                    let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+                    Value::Number(timestamp.as_millis() as f64)
+                },
+            }),
+        );
+
+        let environment = globals.clone();
+
         Interpreter {
-            environment: Environment::new_global(),
+            globals,
+            environment,
             logger: Box::new(StdoutLogger),
         }
     }
@@ -176,7 +195,7 @@ impl Interpreter {
         }
 
         match callee {
-            Value::Function | Value::Class => {
+            Value::Function(callee) => {
                 if evaluated_args.len() > callee.arity() {
                     return Err(RuntimeError {
                         token: paren.clone(),
