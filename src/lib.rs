@@ -12,6 +12,7 @@ mod logger;
 mod parser;
 mod scanner;
 mod stmt;
+mod value;
 
 static mut HAD_RUNTIME_ERROR: bool = false;
 
