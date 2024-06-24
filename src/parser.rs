@@ -62,7 +62,11 @@ impl Parser<'_> {
         }
 
         if self.match_token(&[TokenType::Print]) {
-            return self.print_statment();
+            return self.print_statement();
+        }
+
+        if self.match_token(&[TokenType::Return]) {
+            return self.return_statement();
         }
 
         if self.match_token(&[TokenType::While]) {
@@ -140,10 +144,26 @@ impl Parser<'_> {
         })
     }
 
-    fn print_statment(&mut self) -> Result<Stmt> {
+    fn print_statement(&mut self) -> Result<Stmt> {
         let value = self.expression()?;
         self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
         Ok(Stmt::Print(value))
+    }
+
+    fn return_statement(&mut self) -> Result<Stmt> {
+        let keyword = self.previous();
+
+        let value = if !self.check(&TokenType::Semicolon) {
+            Some(self.expression()?)
+        } else {
+            None
+        };
+
+        self.consume(TokenType::Semicolon, "Expect ';' after return value.")?;
+        Ok(Stmt::Return {
+            name: keyword,
+            value: value.map(Box::new),
+        })
     }
 
     fn var_declaration(&mut self) -> Result<Stmt> {
