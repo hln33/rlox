@@ -341,7 +341,9 @@ impl stmt::Visitor<Result<()>> for Interpreter {
 
 #[cfg(test)]
 mod tests {
-    use std::{cell::RefCell, fmt::Arguments, rc::Rc, vec};
+    use std::{cell::RefCell, fmt::Arguments, fs, rc::Rc, vec};
+
+    use crate::{parser::Parser, scanner::Scanner};
 
     use super::*;
 
@@ -359,6 +361,19 @@ mod tests {
         fn print(&mut self, value: Arguments) {
             self.logs.borrow_mut().push(value.to_string());
         }
+    }
+
+    fn execute_code(lox_code: String, logger: Box<MockLogger>) {
+        let mut interpreter = Interpreter::new();
+        interpreter.logger = logger;
+
+        let mut scanner = Scanner::new(lox_code);
+        let tokens = scanner.scan_tokens();
+
+        let mut parser = Parser::new(tokens);
+        let statements = parser.parse();
+
+        interpreter.interpret(statements);
     }
 
     #[test]
@@ -481,117 +496,14 @@ mod tests {
 
     #[test]
     fn variable_scoping() {
+        let lox_code =
+            fs::read_to_string("test_files/variable_scoping.lox").expect("file to be readable");
+
         let logger = Box::new(MockLogger::new());
         let logs = logger.logs.clone();
+        execute_code(lox_code, logger);
 
-        let mut interpreter = Interpreter::new();
-        interpreter.logger = logger;
-
-        // these are used for print statements, the line number should not matter
-        let a = Token {
-            token_type: TokenType::Identifier,
-            lexeme: "a".to_string(),
-            literal: Literal::None,
-            line: 9999999,
-        };
-        let b = Token {
-            token_type: TokenType::Identifier,
-            lexeme: "b".to_string(),
-            literal: Literal::None,
-            line: 9999999,
-        };
-        let c = Token {
-            token_type: TokenType::Identifier,
-            lexeme: "c".to_string(),
-            literal: Literal::None,
-            line: 9999999,
-        };
-
-        let statements = vec![
-            Stmt::Var {
-                name: Token {
-                    token_type: TokenType::Identifier,
-                    lexeme: "a".to_string(),
-                    literal: Literal::None,
-                    line: 1,
-                },
-                initializer: Some(Expr::Literal {
-                    value: Literal::String(String::from("global a")),
-                }),
-            },
-            Stmt::Var {
-                name: Token {
-                    token_type: TokenType::Identifier,
-                    lexeme: "b".to_string(),
-                    literal: Literal::None,
-                    line: 2,
-                },
-                initializer: Some(Expr::Literal {
-                    value: Literal::String(String::from("global b")),
-                }),
-            },
-            Stmt::Var {
-                name: Token {
-                    token_type: TokenType::Identifier,
-                    lexeme: "c".to_string(),
-                    literal: Literal::None,
-                    line: 3,
-                },
-                initializer: Some(Expr::Literal {
-                    value: Literal::String(String::from("global c")),
-                }),
-            },
-            Stmt::Block(vec![
-                Stmt::Var {
-                    name: Token {
-                        token_type: TokenType::Identifier,
-                        lexeme: "a".to_string(),
-                        literal: Literal::None,
-                        line: 5,
-                    },
-                    initializer: Some(Expr::Literal {
-                        value: Literal::String(String::from("outer a")),
-                    }),
-                },
-                Stmt::Var {
-                    name: Token {
-                        token_type: TokenType::Identifier,
-                        lexeme: "b".to_string(),
-                        literal: Literal::None,
-                        line: 6,
-                    },
-                    initializer: Some(Expr::Literal {
-                        value: Literal::String(String::from("outer b")),
-                    }),
-                },
-                Stmt::Block(vec![
-                    Stmt::Var {
-                        name: Token {
-                            token_type: TokenType::Identifier,
-                            lexeme: "a".to_string(),
-                            literal: Literal::None,
-                            line: 8,
-                        },
-                        initializer: Some(Expr::Literal {
-                            value: Literal::String(String::from("inner a")),
-                        }),
-                    },
-                    Stmt::Print(Expr::Variable { name: a.clone() }),
-                    Stmt::Print(Expr::Variable { name: b.clone() }),
-                    Stmt::Print(Expr::Variable { name: c.clone() }),
-                ]),
-                Stmt::Print(Expr::Variable { name: a.clone() }),
-                Stmt::Print(Expr::Variable { name: b.clone() }),
-                Stmt::Print(Expr::Variable { name: c.clone() }),
-            ]),
-            Stmt::Print(Expr::Variable { name: a.clone() }),
-            Stmt::Print(Expr::Variable { name: b.clone() }),
-            Stmt::Print(Expr::Variable { name: c.clone() }),
-        ];
-
-        interpreter.interpret(statements);
-
-        let expected_logs = vec![
+        let expected_logs = [
             String::from("inner a"),
             String::from("outer b"),
             String::from("global c"),
@@ -602,8 +514,40 @@ mod tests {
             String::from("global b"),
             String::from("global c"),
         ];
+        assert_eq!(expected_logs.len(), logs.borrow().len());
         for (index, log) in logs.borrow().iter().enumerate() {
             assert_eq!(log.to_owned(), expected_logs[index]);
+        }
+    }
+
+    #[test]
+    fn loops() {
+        let lox_code = fs::read_to_string("test_files/loops.lox").expect("file to be readable");
+
+        let logger = Box::new(MockLogger::new());
+        let logs = logger.logs.clone();
+        execute_code(lox_code, logger);
+
+        let expected_logs = ["0", "1", "2", "3", "4"];
+        assert_eq!(expected_logs.len(), logs.borrow().len());
+        for (i, log) in logs.borrow().iter().enumerate() {
+            assert_eq!(log.to_owned(), expected_logs[i])
+        }
+    }
+
+    #[test]
+    fn function_calls() {
+        let lox_code =
+            fs::read_to_string("test_files/function_calls.lox").expect("file to be readable");
+
+        let logger = Box::new(MockLogger::new());
+        let logs = logger.logs.clone();
+        execute_code(lox_code, logger);
+
+        let expected_logs = ["Hi, Dear Reader!"];
+        assert_eq!(expected_logs.len(), logs.borrow().len());
+        for (i, log) in logs.borrow().iter().enumerate() {
+            assert_eq!(log.to_owned(), expected_logs[i])
         }
     }
 }

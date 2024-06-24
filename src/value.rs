@@ -69,7 +69,6 @@ impl Callable for NativeFunction {
 pub struct Function {
     pub declaration: Stmt,
 }
-
 impl Callable for Function {
     fn arity(&self) -> usize {
         if let Stmt::Function {
