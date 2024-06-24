@@ -179,7 +179,7 @@ impl Parser<'_> {
         Ok(Stmt::Expression(value))
     }
 
-    fn function(&mut self, kind: &str) -> Result<(Stmt)> {
+    fn function(&mut self, kind: &str) -> Result<Stmt> {
         let name = self.consume(TokenType::Identifier, &format!("Expect {} name.", kind))?;
 
         let _ = self.consume(
@@ -202,8 +202,9 @@ impl Parser<'_> {
                 }
             }
         }
+        self.consume(TokenType::RightParen, "Expect ')' after parameters.")?;
 
-        let _ = self.consume(
+        self.consume(
             TokenType::LeftBrace,
             &format!("Expect '{{' before {} body.", kind),
         )?;
