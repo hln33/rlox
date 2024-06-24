@@ -3,6 +3,7 @@ use std::{fs, io, process};
 use interpreter::Interpreter;
 use parser::Parser;
 use scanner::{Scanner, Token};
+use value::Value;
 
 // mod ast_printer;
 mod environment;
@@ -15,6 +16,11 @@ mod stmt;
 mod value;
 
 static mut HAD_RUNTIME_ERROR: bool = false;
+
+pub enum Exception {
+    RuntimeError(Token, String),
+    Return(Value),
+}
 
 #[derive(Debug)]
 struct RuntimeError {

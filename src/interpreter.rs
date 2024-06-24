@@ -44,7 +44,7 @@ impl Interpreter {
         for statement in statements {
             match self.execute(&statement) {
                 Ok(_) => (),
-                Err(e) => e.error(),
+                Err(e) => {}
             }
         }
     }
@@ -108,6 +108,15 @@ impl Interpreter {
         self.logger.print(format_args!("{}", value));
 
         Ok(())
+    }
+
+    fn visit_return_stmt(&mut self, value: &Option<Expr>) -> Result<()> {
+        todo!();
+
+        // match value {
+        //     Some(value) => Ok(Return(self.evaluate(value)?)),
+        //     None => Ok(Return(Value::Nil)),
+        // }
     }
 
     fn visit_var_stmt(&mut self, name: &Token, initializer: &Option<Expr>) -> Result<()> {
@@ -335,6 +344,7 @@ impl stmt::Visitor<Result<()>> for Interpreter {
                 params: _,
                 body: _,
             } => self.visit_function_stmt(name, stmt),
+            Stmt::Return { name, value } => todo!(),
         }
     }
 }
