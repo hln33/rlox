@@ -6,7 +6,7 @@ use crate::{
     logger::{Logger, StdoutLogger},
     scanner::{Literal, Token, TokenType},
     stmt::{self, Stmt},
-    value::{Callable, NativeFunction, Value},
+    value::{Callable, Function, NativeFunction, Value},
     RuntimeError,
 };
 
@@ -61,22 +61,31 @@ impl Interpreter {
         let previous = self.environment.clone();
 
         self.environment = environment;
-
         for statement in statements {
-            let _ = self.execute(statement);
+            self.execute(statement)?;
         }
-
         self.environment = previous;
+
         Ok(())
     }
 
     fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) -> Result<()> {
-        let local_env = Environment::new_local(self.environment.clone());
+        let local_env = Environment::new_local(&self.environment);
         self.execute_block(statements, local_env)
     }
 
     fn visit_expr_stmt(&mut self, expr: &Expr) -> Result<()> {
         self.evaluate(expr).map(|_| ())
+    }
+
+    fn visit_function_stmt(&mut self, name: &Token, function_stmt: &Stmt) -> Result<()> {
+        let function = Function {
+            declaration: function_stmt.clone(),
+        };
+        self.environment
+            .borrow_mut()
+            .define(name.lexeme.clone(), Value::Function(function));
+        Ok(())
     }
 
     fn visit_if_stmt(
@@ -194,19 +203,13 @@ impl Interpreter {
 
         match callee {
             Value::Function(callee) => {
-                if evaluated_args.len() > callee.arity() {
-                    return Err(RuntimeError {
-                        token: paren.clone(),
-                        message: format!(
-                            "Expected {} arguments but got {}.",
-                            callee.arity(),
-                            evaluated_args.len()
-                        ),
-                    });
-                }
-                Ok(callee.call(self, evaluated_args))
+                callee.check_arity(evaluated_args.len(), paren)?;
+                callee.call(self, evaluated_args)
             }
-            Value::NativeFunction(callee) => todo!(),
+            Value::NativeFunction(callee) => {
+                callee.check_arity(evaluated_args.len(), paren)?;
+                callee.call(self, evaluated_args)
+            }
             _ => Err(RuntimeError {
                 token: paren.clone(),
                 message: String::from("Can only call functions and classes."),
@@ -327,7 +330,11 @@ impl stmt::Visitor<Result<()>> for Interpreter {
                 else_branch,
             } => self.visit_if_stmt(condition, then_branch, else_branch),
             Stmt::While { condition, body } => self.visit_while_stmt(condition, body),
-            Stmt::Function { name, params, body } => todo!(),
+            Stmt::Function {
+                name,
+                params: _,
+                body: _,
+            } => self.visit_function_stmt(name, stmt),
         }
     }
 }
