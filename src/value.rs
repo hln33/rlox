@@ -1,10 +1,11 @@
 use std::fmt::Display;
 
 use crate::{
-    environment::Environment, interpreter::Interpreter, scanner::Token, stmt::Stmt, RuntimeError,
+    environment::Environment, interpreter::Interpreter, scanner::Token, stmt::Stmt, Exception,
+    RuntimeError,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Value {
     Boolean(bool),
     Number(f64),
@@ -37,20 +38,20 @@ impl Display for Value {
 
 pub trait Callable {
     fn arity(&self) -> usize;
-    fn call(&self, interpreter: &mut Interpreter, args: Vec<Value>) -> Result<Value, RuntimeError>;
-    fn check_arity(&self, args_len: usize, current_token: &Token) -> Result<(), RuntimeError> {
+    fn call(&self, interpreter: &mut Interpreter, args: Vec<Value>) -> Result<Value, Exception>;
+    fn check_arity(&self, args_len: usize, current_token: &Token) -> Result<(), Exception> {
         if args_len > self.arity() {
-            return Err(RuntimeError {
+            return Err(Exception::RuntimeError(RuntimeError {
                 token: current_token.clone(),
                 message: format!("Expected {} arguments but got {}.", self.arity(), args_len),
-            });
+            }));
         }
 
         Ok(())
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct NativeFunction {
     pub arity: usize,
     pub callable: fn(&mut Interpreter, Vec<Value>) -> Value,
@@ -60,12 +61,12 @@ impl Callable for NativeFunction {
         self.arity
     }
 
-    fn call(&self, interpreter: &mut Interpreter, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    fn call(&self, interpreter: &mut Interpreter, args: Vec<Value>) -> Result<Value, Exception> {
         Ok((self.callable)(interpreter, args))
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Function {
     pub declaration: Stmt,
 }
@@ -82,7 +83,7 @@ impl Callable for Function {
         panic!("Function was not passed a function declaration as a statement!");
     }
 
-    fn call(&self, interpreter: &mut Interpreter, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    fn call(&self, interpreter: &mut Interpreter, args: Vec<Value>) -> Result<Value, Exception> {
         let environment = Environment::new_local(&interpreter.globals);
 
         if let Stmt::Function {
@@ -96,10 +97,15 @@ impl Callable for Function {
                     .borrow_mut()
                     .define(param.lexeme.clone(), args.get(i).unwrap().clone())
             }
-            interpreter.execute_block(body, environment)?;
+
+            if let Err(exception) = interpreter.execute_block(body, environment) {
+                match exception {
+                    Exception::RuntimeError(e) => return Err(Exception::RuntimeError(e)),
+                    Exception::Return(e) => return Ok(e),
+                }
+            }
         }
 
-        // will add return values later
         Ok(Value::Nil)
     }
 }
