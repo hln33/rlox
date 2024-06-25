@@ -7,10 +7,10 @@ use crate::{
     scanner::{Literal, Token, TokenType},
     stmt::{self, Stmt},
     value::{Callable, Function, NativeFunction, Value},
-    RuntimeError,
+    Exception, RuntimeError,
 };
 
-type Result<T> = std::result::Result<T, RuntimeError>;
+type Result<T> = std::result::Result<T, Exception>;
 
 pub struct Interpreter {
     pub globals: EnvRef,
@@ -110,13 +110,11 @@ impl Interpreter {
         Ok(())
     }
 
-    fn visit_return_stmt(&mut self, value: &Option<Expr>) -> Result<()> {
-        todo!();
-
-        // match value {
-        //     Some(value) => Ok(Return(self.evaluate(value)?)),
-        //     None => Ok(Return(Value::Nil)),
-        // }
+    fn visit_return_stmt(&mut self, value: &Option<Box<Expr>>) -> Result<()> {
+        match value {
+            Some(value) => Err(Exception::Return(self.evaluate(value)?)),
+            None => Err(Exception::Return(Value::Nil)),
+        }
     }
 
     fn visit_var_stmt(&mut self, name: &Token, initializer: &Option<Expr>) -> Result<()> {
@@ -219,10 +217,10 @@ impl Interpreter {
                 callee.check_arity(evaluated_args.len(), paren)?;
                 callee.call(self, evaluated_args)
             }
-            _ => Err(RuntimeError {
+            _ => Err(Exception::RuntimeError(RuntimeError {
                 token: paren.clone(),
                 message: String::from("Can only call functions and classes."),
-            }),
+            })),
         }
     }
 
@@ -266,18 +264,18 @@ impl Interpreter {
         self.environment.borrow().get(name)
     }
 
-    fn number_operand_error(operator: &Token) -> RuntimeError {
-        RuntimeError {
+    fn number_operand_error(operator: &Token) -> Exception {
+        Exception::RuntimeError(RuntimeError {
             token: operator.clone(),
             message: String::from("Operand must be a number."),
-        }
+        })
     }
 
-    fn number_operands_error(operator: &Token) -> RuntimeError {
-        RuntimeError {
+    fn number_operands_error(operator: &Token) -> Exception {
+        Exception::RuntimeError(RuntimeError {
             token: operator.clone(),
             message: String::from("Operands must be a numbers."),
-        }
+        })
     }
 
     fn is_truthy(value: &Value) -> bool {
@@ -344,7 +342,7 @@ impl stmt::Visitor<Result<()>> for Interpreter {
                 params: _,
                 body: _,
             } => self.visit_function_stmt(name, stmt),
-            Stmt::Return { name, value } => todo!(),
+            Stmt::Return { name, value } => self.visit_return_stmt(value),
         }
     }
 }

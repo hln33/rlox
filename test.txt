@@ -1,7 +1,8 @@
-print clock();
+fun fib(n) {
+  if (n <= 1) return n;
+  print n;
 
-fun sayHi(first, last) {
-  print "Hi, " + first + " " + last + "!";
+  fib(n - 1);
 }
 
-sayHi("Dear", "Reader");
+fib(5);

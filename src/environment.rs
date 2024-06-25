@@ -1,4 +1,4 @@
-use crate::{scanner::Token, value::Value, RuntimeError};
+use crate::{scanner::Token, value::Value, Exception, RuntimeError};
 use std::{
     cell::RefCell,
     collections::{hash_map::Entry, HashMap},
@@ -31,7 +31,7 @@ impl Environment {
         self.values.insert(name, value);
     }
 
-    pub fn get(&self, name: &Token) -> Result<Value, RuntimeError> {
+    pub fn get(&self, name: &Token) -> Result<Value, Exception> {
         if let Some(value) = self.values.get(&name.lexeme) {
             return Ok(value.clone());
         }
@@ -40,13 +40,13 @@ impl Environment {
             return enclosing.borrow().get(name);
         }
 
-        Err(RuntimeError {
+        Err(Exception::RuntimeError(RuntimeError {
             token: name.clone(),
             message: format!("Undefined variable {}.", name.lexeme),
-        })
+        }))
     }
 
-    pub fn assign(&mut self, name: &Token, value: Value) -> Result<(), RuntimeError> {
+    pub fn assign(&mut self, name: &Token, value: Value) -> Result<(), Exception> {
         if let Entry::Occupied(mut e) = self.values.entry(name.lexeme.clone()) {
             e.insert(value);
             return Ok(());
@@ -56,9 +56,9 @@ impl Environment {
             return enclosing.borrow_mut().assign(name, value);
         }
 
-        Err(RuntimeError {
+        Err(Exception::RuntimeError(RuntimeError {
             token: name.clone(),
             message: format!("Undefined variable {}.", name.lexeme),
-        })
+        }))
     }
 }

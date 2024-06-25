@@ -17,8 +17,9 @@ mod value;
 
 static mut HAD_RUNTIME_ERROR: bool = false;
 
-pub enum Exception {
-    RuntimeError(Token, String),
+#[derive(Debug)]
+enum Exception {
+    RuntimeError(RuntimeError),
     Return(Value),
 }
 

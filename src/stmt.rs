@@ -4,7 +4,7 @@ pub trait Visitor<T> {
     fn visit_stmt(&mut self, stmt: &Stmt) -> T;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Stmt {
     Expression(Expr),
     Print(Expr),
