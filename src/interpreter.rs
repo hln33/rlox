@@ -7,7 +7,7 @@ use crate::{
     scanner::{Literal, Token, TokenType},
     stmt::{self, Stmt},
     value::{Callable, Function, NativeFunction, Value},
-    Exception, RuntimeError,
+    Exception,
 };
 
 type Result<T> = std::result::Result<T, Exception>;
@@ -44,7 +44,10 @@ impl Interpreter {
         for statement in statements {
             match self.execute(&statement) {
                 Ok(_) => (),
-                Err(e) => {}
+                Err(e) => match e {
+                    Exception::RuntimeError(e) => e.error(),
+                    Exception::Return(_) => panic!("Return statement not handled!"),
+                },
             }
         }
     }
@@ -217,10 +220,10 @@ impl Interpreter {
                 callee.check_arity(evaluated_args.len(), paren)?;
                 callee.call(self, evaluated_args)
             }
-            _ => Err(Exception::RuntimeError(RuntimeError {
-                token: paren.clone(),
-                message: String::from("Can only call functions and classes."),
-            })),
+            _ => Err(Exception::runtime_error(
+                paren.clone(),
+                String::from("Can only call functions and classes."),
+            )),
         }
     }
 
@@ -265,17 +268,11 @@ impl Interpreter {
     }
 
     fn number_operand_error(operator: &Token) -> Exception {
-        Exception::RuntimeError(RuntimeError {
-            token: operator.clone(),
-            message: String::from("Operand must be a number."),
-        })
+        Exception::runtime_error(operator.clone(), String::from("Operands must be a number."))
     }
 
     fn number_operands_error(operator: &Token) -> Exception {
-        Exception::RuntimeError(RuntimeError {
-            token: operator.clone(),
-            message: String::from("Operands must be a numbers."),
-        })
+        Exception::runtime_error(operator.clone(), String::from("Operands must be numbers."))
     }
 
     fn is_truthy(value: &Value) -> bool {
@@ -342,7 +339,7 @@ impl stmt::Visitor<Result<()>> for Interpreter {
                 params: _,
                 body: _,
             } => self.visit_function_stmt(name, stmt),
-            Stmt::Return { name, value } => self.visit_return_stmt(value),
+            Stmt::Return { name: _, value } => self.visit_return_stmt(value),
         }
     }
 }

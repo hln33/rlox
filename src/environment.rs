@@ -1,4 +1,4 @@
-use crate::{scanner::Token, value::Value, Exception, RuntimeError};
+use crate::{scanner::Token, value::Value, Exception};
 use std::{
     cell::RefCell,
     collections::{hash_map::Entry, HashMap},
@@ -40,10 +40,10 @@ impl Environment {
             return enclosing.borrow().get(name);
         }
 
-        Err(Exception::RuntimeError(RuntimeError {
-            token: name.clone(),
-            message: format!("Undefined variable {}.", name.lexeme),
-        }))
+        Err(Exception::runtime_error(
+            name.clone(),
+            format!("Undefined variable {}.", name.lexeme),
+        ))
     }
 
     pub fn assign(&mut self, name: &Token, value: Value) -> Result<(), Exception> {
@@ -56,9 +56,9 @@ impl Environment {
             return enclosing.borrow_mut().assign(name, value);
         }
 
-        Err(Exception::RuntimeError(RuntimeError {
-            token: name.clone(),
-            message: format!("Undefined variable {}.", name.lexeme),
-        }))
+        Err(Exception::runtime_error(
+            name.clone(),
+            format!("Undefined variable {}.", name.lexeme),
+        ))
     }
 }
