@@ -24,8 +24,8 @@ enum Exception {
 }
 
 impl Exception {
-    fn runtime_error(token: Token, message: String) -> Exception {
-        Exception::RuntimeError(RuntimeError { token, message })
+    fn runtime_error<T>(token: Token, message: String) -> Result<T, Exception> {
+        Err(Exception::RuntimeError(RuntimeError { token, message }))
     }
 }
 

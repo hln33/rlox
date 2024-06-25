@@ -157,15 +157,15 @@ impl Interpreter {
             // arithmetic
             TokenType::Minus => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left - right)),
-                _ => Err(Interpreter::number_operands_error(operator)),
+                _ => Interpreter::number_operands_error(operator),
             },
             TokenType::Slash => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left / right)),
-                _ => Err(Interpreter::number_operands_error(operator)),
+                _ => Interpreter::number_operands_error(operator),
             },
             TokenType::Star => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left * right)),
-                _ => Err(Interpreter::number_operands_error(operator)),
+                _ => Interpreter::number_operands_error(operator),
             },
             TokenType::Plus => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left + right)),
@@ -174,25 +174,25 @@ impl Interpreter {
                     res.push_str(&right);
                     Ok(Value::String(res))
                 }
-                _ => Err(Interpreter::number_operands_error(operator)),
+                _ => Interpreter::number_operands_error(operator),
             },
 
             // comparison
             TokenType::Greater => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Ok(Value::Boolean(left > right)),
-                _ => Err(Interpreter::number_operands_error(operator)),
+                _ => Interpreter::number_operands_error(operator),
             },
             TokenType::GreaterEqual => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Ok(Value::Boolean(left >= right)),
-                _ => Err(Interpreter::number_operands_error(operator)),
+                _ => Interpreter::number_operands_error(operator),
             },
             TokenType::Less => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Ok(Value::Boolean(left < right)),
-                _ => Err(Interpreter::number_operands_error(operator)),
+                _ => Interpreter::number_operands_error(operator),
             },
             TokenType::LessEqual => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Ok(Value::Boolean(left <= right)),
-                _ => Err(Interpreter::number_operands_error(operator)),
+                _ => Interpreter::number_operands_error(operator),
             },
 
             // equality
@@ -220,10 +220,10 @@ impl Interpreter {
                 callee.check_arity(evaluated_args.len(), paren)?;
                 callee.call(self, evaluated_args)
             }
-            _ => Err(Exception::runtime_error(
+            _ => Exception::runtime_error(
                 paren.clone(),
                 String::from("Can only call functions and classes."),
-            )),
+            ),
         }
     }
 
@@ -256,10 +256,10 @@ impl Interpreter {
         match operator.token_type {
             TokenType::Minus => match right_expr {
                 Value::Number(value) => Ok(Value::Number(-value)),
-                _ => Err(Interpreter::number_operand_error(operator)),
+                _ => Interpreter::number_operand_error(operator),
             },
             TokenType::Bang => Ok(Value::Boolean(!Interpreter::is_truthy(&right_expr))),
-            _ => Err(Interpreter::number_operand_error(operator)),
+            _ => Interpreter::number_operand_error(operator),
         }
     }
 
@@ -267,11 +267,11 @@ impl Interpreter {
         self.environment.borrow().get(name)
     }
 
-    fn number_operand_error(operator: &Token) -> Exception {
+    fn number_operand_error<T>(operator: &Token) -> Result<T> {
         Exception::runtime_error(operator.clone(), String::from("Operands must be a number."))
     }
 
-    fn number_operands_error(operator: &Token) -> Exception {
+    fn number_operands_error<T>(operator: &Token) -> Result<T> {
         Exception::runtime_error(operator.clone(), String::from("Operands must be numbers."))
     }
 
