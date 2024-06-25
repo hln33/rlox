@@ -23,6 +23,12 @@ enum Exception {
     Return(Value),
 }
 
+impl Exception {
+    fn runtime_error(token: Token, message: String) -> Exception {
+        Exception::RuntimeError(RuntimeError { token, message })
+    }
+}
+
 #[derive(Debug)]
 struct RuntimeError {
     token: Token,
