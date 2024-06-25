@@ -40,10 +40,7 @@ impl Environment {
             return enclosing.borrow().get(name);
         }
 
-        Err(Exception::runtime_error(
-            name.clone(),
-            format!("Undefined variable {}.", name.lexeme),
-        ))
+        Exception::runtime_error(name.clone(), format!("Undefined variable {}.", name.lexeme))
     }
 
     pub fn assign(&mut self, name: &Token, value: Value) -> Result<(), Exception> {
@@ -56,9 +53,6 @@ impl Environment {
             return enclosing.borrow_mut().assign(name, value);
         }
 
-        Err(Exception::runtime_error(
-            name.clone(),
-            format!("Undefined variable {}.", name.lexeme),
-        ))
+        Exception::runtime_error(name.clone(), format!("Undefined variable {}.", name.lexeme))
     }
 }
