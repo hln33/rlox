@@ -7,6 +7,7 @@ use std::{
 
 pub type EnvRef = Rc<RefCell<Environment>>;
 
+#[derive(Debug)]
 pub struct Environment {
     enclosing: Option<EnvRef>,
     values: HashMap<String, Value>,
