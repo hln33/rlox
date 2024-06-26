@@ -558,4 +558,23 @@ mod tests {
             assert_eq!(log.to_owned(), expected_logs[i])
         }
     }
+
+    #[test]
+    fn recursive_functions() {
+        let lox_code =
+            fs::read_to_string("test_files/recursive_functions.lox").expect("file to be readable");
+
+        let logger = Box::new(MockLogger::new());
+        let logs = logger.logs.clone();
+        execute_code(lox_code, logger);
+
+        let expected_logs = [
+            "0", "1", "1", "2", "3", "5", "8", "13", "21", "34", "55", "89", "144", "233", "377",
+            "610", "987", "1597", "2584", "4181",
+        ];
+        assert_eq!(expected_logs.len(), logs.borrow().len());
+        for (i, log) in logs.borrow().iter().enumerate() {
+            assert_eq!(log.to_owned(), expected_logs[i])
+        }
+    }
 }
