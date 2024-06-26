@@ -1,7 +1,11 @@
 use std::fmt::Display;
 
 use crate::{
-    environment::Environment, interpreter::Interpreter, scanner::Token, stmt::Stmt, Exception,
+    environment::{EnvRef, Environment},
+    interpreter::Interpreter,
+    scanner::Token,
+    stmt::Stmt,
+    Exception,
 };
 
 #[derive(Clone, Debug)]
@@ -67,8 +71,26 @@ impl Callable for NativeFunction {
 
 #[derive(Clone, Debug)]
 pub struct Function {
-    pub declaration: Stmt,
+    declaration: Stmt,
+    closure: EnvRef,
 }
+
+impl Function {
+    pub fn new(declaration: Stmt, closure: EnvRef) -> Function {
+        match &declaration {
+            Stmt::Function {
+                name: _,
+                params: _,
+                body: _,
+            } => Function {
+                declaration,
+                closure,
+            },
+            _ => panic!("Function was not passed a function declaration!"),
+        }
+    }
+}
+
 impl Callable for Function {
     fn arity(&self) -> usize {
         if let Stmt::Function {
@@ -79,11 +101,11 @@ impl Callable for Function {
         {
             return params.len();
         }
-        panic!("Function was not passed a function declaration as a statement!");
+        panic!("Function was not passed a function declaration!");
     }
 
     fn call(&self, interpreter: &mut Interpreter, args: Vec<Value>) -> Result<Value, Exception> {
-        let environment = Environment::new_local(&interpreter.globals);
+        let environment = Environment::new_local(&self.closure);
 
         if let Stmt::Function {
             name: _,
