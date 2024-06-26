@@ -65,10 +65,13 @@ impl Interpreter {
 
         self.environment = environment;
         for statement in statements {
-            self.execute(statement)?;
+            if let Err(e) = self.execute(statement) {
+                self.environment = previous;
+                return Err(e);
+            }
         }
-        self.environment = previous;
 
+        self.environment = previous;
         Ok(())
     }
 
