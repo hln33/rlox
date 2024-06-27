@@ -4,7 +4,6 @@ use rlox::{run_file, run_prompt};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-
     println!("{:?}", args);
 
     match args.len().cmp(&2) {

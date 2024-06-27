@@ -11,6 +11,7 @@ mod expr;
 mod interpreter;
 mod logger;
 mod parser;
+mod resolver;
 mod scanner;
 mod stmt;
 mod value;
@@ -89,6 +90,6 @@ fn run(source: String, interpreter: &mut Interpreter) {
 }
 
 // calling code will throw error
-pub fn print_error(line: u64, location: String, message: &str) {
+pub fn print_error(line: usize, location: String, message: &str) {
     eprintln!("[line {line}] Error {location}: {message}");
 }
