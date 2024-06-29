@@ -104,6 +104,7 @@ impl Interpreter {
         if Interpreter::is_truthy(&self.evaluate(condition)?) {
             return self.execute(then_branch);
         }
+
         match else_branch {
             Some(else_branch) => self.execute(else_branch),
             None => Ok(()),
