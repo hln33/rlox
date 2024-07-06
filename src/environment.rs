@@ -32,6 +32,30 @@ impl Environment {
         self.values.insert(name, value);
     }
 
+    pub fn get_at(&self, distance: usize, name: &str) -> Result<Value, Exception> {
+        if distance == 0 {
+            return Ok(self.values.get(name).unwrap().clone());
+        }
+
+        if let Some(enclosing) = &self.enclosing {
+            return enclosing.borrow().get_at(distance - 1, name);
+        }
+
+        panic!("Could not find local scope that variable belongs to!")
+    }
+
+    pub fn assign_at(&mut self, distance: usize, name: &Token, value: &Value) {
+        if distance == 0 {
+            self.values.insert(name.lexeme.clone(), value.clone());
+        }
+
+        if self.enclosing.is_some() {
+            self.assign_at(distance - 1, name, value)
+        }
+
+        panic!("Could not find local scope that variable belongs to!")
+    }
+
     pub fn get(&self, name: &Token) -> Result<Value, Exception> {
         if let Some(value) = self.values.get(&name.lexeme) {
             return Ok(value.clone());
@@ -44,9 +68,9 @@ impl Environment {
         Exception::runtime_error(name.clone(), format!("Undefined variable {}.", name.lexeme))
     }
 
-    pub fn assign(&mut self, name: &Token, value: Value) -> Result<(), Exception> {
+    pub fn assign(&mut self, name: &Token, value: &Value) -> Result<(), Exception> {
         if let Entry::Occupied(mut e) = self.values.entry(name.lexeme.clone()) {
-            e.insert(value);
+            e.insert(value.clone());
             return Ok(());
         }
 

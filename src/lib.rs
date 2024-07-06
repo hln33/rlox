@@ -2,6 +2,7 @@ use std::{fs, io, process};
 
 use interpreter::Interpreter;
 use parser::Parser;
+use resolver::Resolver;
 use scanner::{Scanner, Token};
 use value::Value;
 
@@ -85,6 +86,15 @@ fn run(source: String, interpreter: &mut Interpreter) {
 
     let mut parser = Parser::new(tokens);
     let statements = parser.parse();
+
+    unsafe {
+        if HAD_RUNTIME_ERROR {
+            process::exit(70)
+        }
+    }
+
+    let mut resolver = Resolver::new(interpreter);
+    resolver.resolve_block(&statements);
 
     interpreter.interpret(statements);
 }
