@@ -6,18 +6,22 @@ use crate::{
     print_error,
     scanner::Token,
     stmt::{self, Stmt},
-    value,
 };
 
-struct Resolver {
-    interpreter: Interpreter,
+pub struct Resolver<'a> {
+    interpreter: &'a mut Interpreter,
     scopes: Vec<HashMap<String, bool>>,
 }
 
-impl Resolver {
-    pub fn new(interpreter: Interpreter) {}
+impl Resolver<'_> {
+    pub fn new(interpreter: &mut Interpreter) -> Resolver {
+        Resolver {
+            interpreter,
+            scopes: vec![],
+        }
+    }
 
-    fn resolve_block(&mut self, statements: &Vec<Stmt>) {
+    pub fn resolve_block(&mut self, statements: &Vec<Stmt>) {
         for statement in statements {
             self.resolve_stmt(statement);
         }
@@ -31,14 +35,14 @@ impl Resolver {
         expr::Visitor::visit_expr(self, expr);
     }
 
-    fn resolve_function(&self, params: Vec<Token>, body: Vec<Stmt>) {
+    fn resolve_function(&mut self, params: &Vec<Token>, body: &Vec<Stmt>) {
         self.begin_scope();
 
         for param in params {
-            self.declare(&param);
-            self.define(&param);
+            self.declare(param);
+            self.define(param);
         }
-        self.resolve_block(&body);
+        self.resolve_block(body);
 
         self.end_scope();
     }
@@ -69,7 +73,7 @@ impl Resolver {
         scope.insert(name.lexeme.clone(), true);
     }
 
-    fn resolve_local(&self, expr: &Expr, name: &Token) {
+    fn resolve_local(&mut self, expr: &Expr, name: &Token) {
         for (i, scope) in self.scopes.iter().rev().enumerate() {
             if scope.contains_key(&name.lexeme) {
                 let hops_away = self.scopes.len() - 1 - i;
@@ -89,9 +93,11 @@ impl Resolver {
         self.resolve_expr(expr);
     }
 
-    fn visit_function_stmt(&mut self, function_stmt: &Stmt, name: &Token) {
+    fn visit_function_stmt(&mut self, name: &Token, params: &Vec<Token>, body: &Vec<Stmt>) {
         self.declare(name);
         self.define(name);
+
+        self.resolve_function(params, body);
     }
 
     fn visit_if_stmt(
@@ -164,7 +170,7 @@ impl Resolver {
         self.resolve_expr(right);
     }
 
-    fn visit_var_expr(&self, var_expr: &Expr, name: &Token) {
+    fn visit_var_expr(&mut self, var_expr: &Expr, name: &Token) {
         if let Some(scope) = self.scopes.last() {
             if let Some(false) = scope.get(&name.lexeme) {
                 print_error(
@@ -185,34 +191,22 @@ impl Resolver {
     }
 }
 
-impl expr::Visitor<()> for Resolver {
+impl expr::Visitor<()> for Resolver<'_> {
     fn visit_expr(&mut self, expr: &Expr) {
         match expr {
-            Expr::Binary {
-                left,
-                operator,
-                right,
-            } => self.visit_binary_expr(left, right),
-            Expr::Grouping { expression } => self.visit_grouping_expr(expression),
-            Expr::Literal { value } => self.visit_literal_expr(),
-            Expr::Unary { operator, right } => self.visit_unary_expr(right),
-            Expr::Variable { name } => self.visit_var_expr(expr, name),
-            Expr::Assign { name, value } => self.visit_assign_expr(expr, name, value),
-            Expr::Logical {
-                left,
-                operator,
-                right,
-            } => self.visit_logical_expr(left, right),
-            Expr::Call {
-                callee,
-                paren,
-                args,
-            } => self.visit_call_expr(callee, args),
+            Expr::Binary { left, right, .. } => self.visit_binary_expr(left, right),
+            Expr::Grouping { expression, .. } => self.visit_grouping_expr(expression),
+            Expr::Literal { .. } => self.visit_literal_expr(),
+            Expr::Unary { right, .. } => self.visit_unary_expr(right),
+            Expr::Variable { name, .. } => self.visit_var_expr(expr, name),
+            Expr::Assign { name, value, .. } => self.visit_assign_expr(expr, name, value),
+            Expr::Logical { left, right, .. } => self.visit_logical_expr(left, right),
+            Expr::Call { callee, args, .. } => self.visit_call_expr(callee, args),
         }
     }
 }
 
-impl stmt::Visitor<()> for Resolver {
+impl stmt::Visitor<()> for Resolver<'_> {
     fn visit_stmt(&mut self, stmt: &Stmt) {
         match stmt {
             Stmt::Expression(expr) => self.visit_expr_stmt(expr),
@@ -225,8 +219,8 @@ impl stmt::Visitor<()> for Resolver {
                 else_branch,
             } => self.visit_if_stmt(condition, then_branch, else_branch),
             Stmt::While { condition, body } => self.visit_while_stmt(condition, body),
-            Stmt::Function { name, params, body } => self.visit_function_stmt(stmt, name),
-            Stmt::Return { name, value } => self.visit_return_stmt(value),
+            Stmt::Function { name, params, body } => self.visit_function_stmt(name, params, body),
+            Stmt::Return { value, .. } => self.visit_return_stmt(value),
         }
     }
 }

@@ -1,4 +1,7 @@
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    collections::HashMap,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use crate::{
     environment::{EnvRef, Environment},
@@ -15,6 +18,7 @@ type Result<T> = std::result::Result<T, Exception>;
 pub struct Interpreter {
     pub globals: EnvRef,
     environment: EnvRef,
+    locals: HashMap<Expr, usize>,
     logger: Box<dyn Logger>,
 }
 
@@ -36,6 +40,7 @@ impl Interpreter {
         Interpreter {
             globals,
             environment,
+            locals: HashMap::new(),
             logger: Box::new(StdoutLogger),
         }
     }
@@ -58,6 +63,10 @@ impl Interpreter {
 
     fn execute(&mut self, stmt: &Stmt) -> Result<()> {
         stmt::Visitor::visit_stmt(self, stmt)
+    }
+
+    pub fn resolve(&mut self, expr: &Expr, depth: usize) {
+        self.locals.insert(expr.clone(), depth);
     }
 
     pub fn execute_block(&mut self, statements: &Vec<Stmt>, environment: EnvRef) -> Result<()> {
@@ -145,13 +154,19 @@ impl Interpreter {
         Ok(())
     }
 
-    fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> Result<Value> {
+    fn visit_assign_expr(&mut self, name: &Token, value: &Expr, expr: &Expr) -> Result<Value> {
         let value = self.evaluate(value)?;
 
-        match self.environment.borrow_mut().assign(name, value.clone()) {
-            Ok(_) => Ok(value),
-            Err(e) => Err(e),
-        }
+        let distance = self.locals.get(expr);
+        match distance {
+            Some(distance) => self
+                .environment
+                .borrow_mut()
+                .assign_at(*distance, name, &value),
+            None => self.globals.borrow_mut().assign(name, &value)?,
+        };
+
+        Ok(value)
     }
 
     fn visit_binary_expr(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<Value> {
@@ -268,8 +283,18 @@ impl Interpreter {
         }
     }
 
-    fn visit_var_expr(&self, name: &Token) -> Result<Value> {
-        self.environment.borrow().get(name)
+    fn visit_var_expr(&self, name: &Token, expr: &Expr) -> Result<Value> {
+        self.lookup_variable(name, expr)
+    }
+
+    fn lookup_variable(&self, name: &Token, expr: &Expr) -> Result<Value> {
+        let distance = self.locals.get(expr);
+
+        if let Some(distance) = distance {
+            self.environment.borrow().get_at(*distance, &name.lexeme)
+        } else {
+            self.globals.borrow().get(name)
+        }
     }
 
     fn number_operand_error<T>(operator: &Token) -> Result<T> {
@@ -306,21 +331,26 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                 left,
                 operator,
                 right,
+                ..
             } => self.visit_binary_expr(left, operator, right),
-            Expr::Grouping { expression } => self.evaluate(expression),
-            Expr::Literal { value } => Ok(self.visit_literal_expr(value)),
-            Expr::Unary { operator, right } => self.visit_unary_expr(operator, right),
-            Expr::Variable { name } => self.visit_var_expr(name),
-            Expr::Assign { name, value } => self.visit_assign_expr(name, value),
+            Expr::Grouping { expression, .. } => self.evaluate(expression),
+            Expr::Literal { value, .. } => Ok(self.visit_literal_expr(value)),
+            Expr::Unary {
+                operator, right, ..
+            } => self.visit_unary_expr(operator, right),
+            Expr::Variable { name, .. } => self.visit_var_expr(name, expr),
+            Expr::Assign { name, value, .. } => self.visit_assign_expr(name, value, expr),
             Expr::Logical {
                 left,
                 operator,
                 right,
+                ..
             } => self.visit_logical_expr(left, operator, right),
             Expr::Call {
                 callee,
                 paren,
                 args,
+                ..
             } => self.visit_call_expr(callee, paren, args),
         }
     }
@@ -339,12 +369,8 @@ impl stmt::Visitor<Result<()>> for Interpreter {
                 else_branch,
             } => self.visit_if_stmt(condition, then_branch, else_branch),
             Stmt::While { condition, body } => self.visit_while_stmt(condition, body),
-            Stmt::Function {
-                name,
-                params: _,
-                body: _,
-            } => self.visit_function_stmt(name, stmt),
-            Stmt::Return { name: _, value } => self.visit_return_stmt(value),
+            Stmt::Function { name, .. } => self.visit_function_stmt(name, stmt),
+            Stmt::Return { value, .. } => self.visit_return_stmt(value),
         }
     }
 }
@@ -400,6 +426,7 @@ mod tests {
         let var_stmt = Stmt::Var {
             name: variable_token.clone(),
             initializer: Some(Expr::Literal {
+                uid: 0,
                 value: Literal::Number(10.0),
             }),
         };
@@ -410,8 +437,10 @@ mod tests {
 
         // assignment
         let assign_stmt = Stmt::Expression(Expr::Assign {
+            uid: 0,
             name: variable_token.clone(),
             value: Box::new(Expr::Literal {
+                uid: 0,
                 value: Literal::Number(20.5),
             }),
         });
@@ -428,7 +457,9 @@ mod tests {
 
         // Assuming you have defined a helper function or builder for creating expressions
         let expr = Expr::Binary {
+            uid: 0,
             left: Box::new(Expr::Literal {
+                uid: 0,
                 value: Literal::Number(10.0),
             }),
             operator: Token {
@@ -438,6 +469,7 @@ mod tests {
                 line: 1,
             },
             right: Box::new(Expr::Literal {
+                uid: 0,
                 value: Literal::Number(5.0),
             }),
         };
@@ -459,6 +491,7 @@ mod tests {
                     line: 1,
                 },
                 initializer: Some(Expr::Literal {
+                    uid: 0,
                     value: Literal::Number(10.0),
                 }),
             },
@@ -470,11 +503,14 @@ mod tests {
                     line: 1,
                 },
                 initializer: Some(Expr::Literal {
+                    uid: 0,
                     value: Literal::Number(20.0),
                 }),
             },
             Stmt::Expression(Expr::Binary {
+                uid: 0,
                 left: Box::new(Expr::Variable {
+                    uid: 0,
                     name: Token {
                         token_type: TokenType::Identifier,
                         lexeme: "x".to_string(),
@@ -489,6 +525,7 @@ mod tests {
                     line: 3,
                 },
                 right: Box::new(Expr::Variable {
+                    uid: 0,
                     name: Token {
                         token_type: TokenType::Identifier,
                         lexeme: "x".to_string(),

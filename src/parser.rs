@@ -5,6 +5,15 @@ use crate::{
     stmt::Stmt,
 };
 
+static mut ID: u8 = 0;
+
+fn next_id() -> u8 {
+    unsafe {
+        ID += 1;
+        ID
+    }
+}
+
 #[derive(Debug)]
 struct ParseError;
 
@@ -111,6 +120,7 @@ impl Parser<'_> {
 
         if condition.is_none() {
             condition.replace(Expr::Literal {
+                uid: next_id(),
                 value: Literal::Bool(true),
             });
         }
@@ -253,8 +263,9 @@ impl Parser<'_> {
             let equals = self.previous();
             let value = self.assignment()?;
 
-            if let Expr::Variable { name } = expr {
+            if let Expr::Variable { name, uid } = expr {
                 return Ok(Expr::Assign {
+                    uid: next_id(),
                     name,
                     value: Box::new(value),
                 });
@@ -308,6 +319,7 @@ impl Parser<'_> {
             let operator = self.previous();
             let right = self.unary()?;
             return Ok(Expr::Unary {
+                uid: next_id(),
                 operator,
                 right: Box::new(right),
             });
@@ -335,6 +347,7 @@ impl Parser<'_> {
         let paren = self.consume(TokenType::RightParen, "Expect ')' after arguments.")?;
 
         Ok(Expr::Call {
+            uid: next_id(),
             callee: Box::new(callee),
             paren,
             args,
@@ -358,28 +371,33 @@ impl Parser<'_> {
     fn primary(&mut self) -> Result<Expr> {
         if self.match_token(&[TokenType::False]) {
             return Ok(Expr::Literal {
+                uid: next_id(),
                 value: Literal::Bool(false),
             });
         }
         if self.match_token(&[TokenType::True]) {
             return Ok(Expr::Literal {
+                uid: next_id(),
                 value: Literal::Bool(true),
             });
         }
         if self.match_token(&[TokenType::Nil]) {
             return Ok(Expr::Literal {
+                uid: next_id(),
                 value: Literal::None,
             });
         }
 
         if self.match_token(&[TokenType::Number, TokenType::String]) {
             return Ok(Expr::Literal {
+                uid: next_id(),
                 value: self.previous().literal,
             });
         }
 
         if self.match_token(&[TokenType::Identifier]) {
             return Ok(Expr::Variable {
+                uid: next_id(),
                 name: self.previous(),
             });
         }
@@ -388,6 +406,7 @@ impl Parser<'_> {
             let expr = self.expression()?;
             self.consume(TokenType::RightParen, "Expect ')' after expression")?;
             return Ok(Expr::Grouping {
+                uid: next_id(),
                 expression: Box::new(expr),
             });
         }
@@ -409,6 +428,7 @@ impl Parser<'_> {
             let operator = self.previous();
             let right = parse_next_level(self)?;
             expr = Expr::Binary {
+                uid: next_id(),
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
@@ -432,6 +452,7 @@ impl Parser<'_> {
             let operator = self.previous();
             let right = parse_next_level(self)?;
             expr = Expr::Logical {
+                uid: next_id(),
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
