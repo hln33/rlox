@@ -263,7 +263,7 @@ impl Parser<'_> {
             let equals = self.previous();
             let value = self.assignment()?;
 
-            if let Expr::Variable { name, uid } = expr {
+            if let Expr::Variable { name, uid: _ } = expr {
                 return Ok(Expr::Assign {
                     uid: next_id(),
                     name,

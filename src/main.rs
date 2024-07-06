@@ -3,6 +3,8 @@ use std::{cmp::Ordering, env, process};
 use rlox::{run_file, run_prompt};
 
 fn main() {
+    env::set_var("RUST_BACKTRACE", "1");
+
     let args: Vec<String> = env::args().collect();
     println!("{:?}", args);
 

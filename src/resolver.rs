@@ -75,8 +75,9 @@ impl Resolver<'_> {
 
     fn resolve_local(&mut self, expr: &Expr, name: &Token) {
         for (i, scope) in self.scopes.iter().rev().enumerate() {
+            let index = self.scopes.len() - 1 - i;
             if scope.contains_key(&name.lexeme) {
-                let hops_away = self.scopes.len() - 1 - i;
+                let hops_away = self.scopes.len() - 1 - index;
                 self.interpreter.resolve(expr, hops_away);
                 return;
             }

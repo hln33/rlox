@@ -47,10 +47,12 @@ impl Environment {
     pub fn assign_at(&mut self, distance: usize, name: &Token, value: &Value) {
         if distance == 0 {
             self.values.insert(name.lexeme.clone(), value.clone());
+            return;
         }
 
-        if self.enclosing.is_some() {
-            self.assign_at(distance - 1, name, value)
+        if let Some(enclosing) = &self.enclosing {
+            enclosing.borrow_mut().assign_at(distance - 1, name, value);
+            return;
         }
 
         panic!("Could not find local scope that variable belongs to!")
