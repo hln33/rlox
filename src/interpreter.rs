@@ -377,9 +377,9 @@ impl stmt::Visitor<Result<()>> for Interpreter {
 
 #[cfg(test)]
 mod tests {
-    use std::{cell::RefCell, fmt::Arguments, fs, rc::Rc, vec};
+    use std::{cell::RefCell, env, fmt::Arguments, fs, rc::Rc, vec};
 
-    use crate::{parser::Parser, scanner::Scanner};
+    use crate::{parser::Parser, resolver::Resolver, scanner::Scanner};
 
     use super::*;
 
@@ -400,6 +400,8 @@ mod tests {
     }
 
     fn execute_code(lox_code: String, logger: Box<MockLogger>) {
+        env::set_var("RUST_BACKTRACE", "1");
+
         let mut interpreter = Interpreter::new();
         interpreter.logger = logger;
 
@@ -408,6 +410,9 @@ mod tests {
 
         let mut parser = Parser::new(tokens);
         let statements = parser.parse();
+
+        let mut resolver = Resolver::new(&mut interpreter);
+        resolver.resolve_block(&statements);
 
         interpreter.interpret(statements);
     }
