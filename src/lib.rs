@@ -7,9 +7,9 @@ use scanner::{Scanner, Token};
 use value::Value;
 
 // mod ast_printer;
-mod Function;
 mod environment;
 mod expr;
+mod function;
 mod interpreter;
 mod logger;
 mod parser;

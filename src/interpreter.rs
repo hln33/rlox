@@ -6,12 +6,12 @@ use std::{
 use crate::{
     environment::{EnvRef, Environment},
     expr::{self, Expr},
+    function::{Callable, Function, NativeFunction},
     logger::{Logger, StdoutLogger},
     scanner::{Literal, Token, TokenType},
     stmt::{self, Stmt},
     value::Value,
     Exception,
-    Function::{Callable, Function, NativeFunction},
 };
 
 type Result<T> = std::result::Result<T, Exception>;

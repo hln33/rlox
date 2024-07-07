@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::Function::{Function, NativeFunction};
+use crate::function::{Function, NativeFunction};
 
 #[derive(Clone, Debug)]
 pub enum Value {
