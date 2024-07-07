@@ -9,8 +9,9 @@ use crate::{
     logger::{Logger, StdoutLogger},
     scanner::{Literal, Token, TokenType},
     stmt::{self, Stmt},
-    value::{Callable, Function, NativeFunction, Value},
+    value::Value,
     Exception,
+    Function::{Callable, Function, NativeFunction},
 };
 
 type Result<T> = std::result::Result<T, Exception>;
