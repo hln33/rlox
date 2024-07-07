@@ -74,10 +74,9 @@ impl Resolver<'_> {
     }
 
     fn resolve_local(&mut self, expr: &Expr, name: &Token) {
-        for (i, scope) in self.scopes.iter().rev().enumerate() {
-            let index = self.scopes.len() - 1 - i;
-            if scope.contains_key(&name.lexeme) {
-                let hops_away = self.scopes.len() - 1 - index;
+        for i in (0..self.scopes.len()).rev() {
+            if self.scopes[i].contains_key(&name.lexeme) {
+                let hops_away = self.scopes.len() - 1 - i;
                 self.interpreter.resolve(expr, hops_away);
                 return;
             }
@@ -151,6 +150,7 @@ impl Resolver<'_> {
 
     fn visit_call_expr(&mut self, callee: &Expr, args: &Vec<Expr>) {
         self.resolve_expr(callee);
+
         for arg in args {
             self.resolve_expr(arg);
         }

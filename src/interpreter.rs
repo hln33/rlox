@@ -94,10 +94,7 @@ impl Interpreter {
     }
 
     fn visit_function_stmt(&mut self, name: &Token, function_stmt: &Stmt) -> Result<()> {
-        let function = Function::new(
-            function_stmt.clone(),
-            Environment::new_local(&self.environment),
-        );
+        let function = Function::new(function_stmt.clone(), self.environment.clone());
         self.environment
             .borrow_mut()
             .define(name.lexeme.clone(), Value::Function(function));
