@@ -269,6 +269,13 @@ mod tests {
 
     use super::*;
 
+    fn test_for_resolution_error(file_path: &str) {
+        let lox_code = fs::read_to_string(file_path).expect("file to be readable");
+        resolve_code(lox_code);
+
+        assert!(runtime_error())
+    }
+
     fn resolve_code(lox_code: String) {
         env::set_var("RUST_BACKTRACE", "1");
 
@@ -286,19 +293,11 @@ mod tests {
 
     #[test]
     fn variable_resolution_error() {
-        let lox_code = fs::read_to_string("test_files/variable_resolution_error.lox")
-            .expect("file to be readable");
-        resolve_code(lox_code);
-
-        assert!(runtime_error())
+        test_for_resolution_error("test_files/variable_resolution_error.lox")
     }
 
     #[test]
     fn invalid_return_error() {
-        let lox_code =
-            fs::read_to_string("test_files/invalid_return_error.lox").expect("file to be readable");
-        resolve_code(lox_code);
-
-        assert!(runtime_error())
+        test_for_resolution_error("test_files/invalid_return_error.lox")
     }
 }
