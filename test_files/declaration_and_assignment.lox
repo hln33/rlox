@@ -1,0 +1,5 @@
+var x = 1;
+print x;
+
+x = 25.1;
+print x;

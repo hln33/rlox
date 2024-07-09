@@ -51,6 +51,14 @@ pub fn runtime_error() -> bool {
     unsafe { HAD_RUNTIME_ERROR }
 }
 
+fn check_runtime_error() {
+    unsafe {
+        if HAD_RUNTIME_ERROR {
+            process::exit(70)
+        }
+    }
+}
+
 pub fn run_file(path: &str) {
     // let _bytes = fs::read(path).expect("file to be readable");
 
@@ -92,20 +100,12 @@ fn run(source: String, interpreter: &mut Interpreter) {
     let mut parser = Parser::new(tokens);
     let statements = parser.parse();
 
-    unsafe {
-        if HAD_RUNTIME_ERROR {
-            process::exit(70)
-        }
-    }
+    check_runtime_error();
 
     let mut resolver = Resolver::new(interpreter);
     resolver.resolve_block(&statements);
 
-    unsafe {
-        if HAD_RUNTIME_ERROR {
-            process::exit(70)
-        }
-    }
+    check_runtime_error();
 
     interpreter.interpret(statements);
 }
