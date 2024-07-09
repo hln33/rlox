@@ -260,3 +260,45 @@ impl stmt::Visitor<()> for Resolver<'_> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{env, fs};
+
+    use crate::{interpreter::Interpreter, parser::Parser, runtime_error, scanner::Scanner};
+
+    use super::*;
+
+    fn resolve_code(lox_code: String) {
+        env::set_var("RUST_BACKTRACE", "1");
+
+        let mut interpreter = Interpreter::new();
+
+        let mut scanner = Scanner::new(lox_code);
+        let tokens = scanner.scan_tokens();
+
+        let mut parser = Parser::new(tokens);
+        let statements = parser.parse();
+
+        let mut resolver = Resolver::new(&mut interpreter);
+        resolver.resolve_block(&statements);
+    }
+
+    #[test]
+    fn variable_resolution_error() {
+        let lox_code = fs::read_to_string("test_files/variable_resolution_error.lox")
+            .expect("file to be readable");
+        resolve_code(lox_code);
+
+        assert!(runtime_error())
+    }
+
+    #[test]
+    fn invalid_return_error() {
+        let lox_code =
+            fs::read_to_string("test_files/invalid_return_error.lox").expect("file to be readable");
+        resolve_code(lox_code);
+
+        assert!(runtime_error())
+    }
+}
