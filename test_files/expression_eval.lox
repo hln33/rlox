@@ -1,0 +1,2 @@
+var res = 10 + 5;
+print res;

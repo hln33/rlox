@@ -397,6 +397,18 @@ mod tests {
         }
     }
 
+    fn assert_prints(file_path: &str, expected_prints: &[String]) {
+        let lox_code = fs::read_to_string(file_path).expect("file to be readable");
+        let logger = Box::new(MockLogger::new());
+        let logs = logger.logs.clone();
+        execute_code(lox_code, logger);
+
+        assert_eq!(expected_prints.len(), logs.borrow().len());
+        for (index, log) in logs.borrow().iter().enumerate() {
+            assert_eq!(log.to_owned(), expected_prints[index]);
+        }
+    }
+
     fn execute_code(lox_code: String, logger: Box<MockLogger>) {
         env::set_var("RUST_BACKTRACE", "1");
 
@@ -417,221 +429,88 @@ mod tests {
 
     #[test]
     fn variable_declaration_and_assignment() {
-        let mut interpreter = Interpreter::new();
-        let variable_token = Token {
-            token_type: TokenType::Identifier,
-            lexeme: "x".to_string(),
-            literal: Literal::None,
-            line: 1,
-        };
-
-        // declaration
-        let var_stmt = Stmt::Var {
-            name: variable_token.clone(),
-            initializer: Some(Expr::Literal {
-                uid: 0,
-                value: Literal::Number(10.0),
-            }),
-        };
-        assert!(interpreter.execute(&var_stmt).is_ok());
-
-        let result = interpreter.environment.borrow().get(&variable_token);
-        assert_eq!(result.unwrap().to_string(), "10");
-
-        // assignment
-        let assign_stmt = Stmt::Expression(Expr::Assign {
-            uid: 0,
-            name: variable_token.clone(),
-            value: Box::new(Expr::Literal {
-                uid: 0,
-                value: Literal::Number(20.5),
-            }),
-        });
-        assert!(interpreter.execute(&assign_stmt).is_ok());
-
-        // check that variable got updated
-        let result = interpreter.environment.borrow().get(&variable_token);
-        assert_eq!(result.unwrap().to_string(), "20.5");
+        assert_prints(
+            "test_files/declaration_and_assignment.lox",
+            &[String::from("1"), String::from("25.1")],
+        )
     }
 
     #[test]
     fn expression_evaluation() {
-        let mut interpreter = Interpreter::new();
-
-        // Assuming you have defined a helper function or builder for creating expressions
-        let expr = Expr::Binary {
-            uid: 0,
-            left: Box::new(Expr::Literal {
-                uid: 0,
-                value: Literal::Number(10.0),
-            }),
-            operator: Token {
-                token_type: TokenType::Plus,
-                lexeme: "+".to_string(),
-                literal: Literal::None,
-                line: 1,
-            },
-            right: Box::new(Expr::Literal {
-                uid: 0,
-                value: Literal::Number(5.0),
-            }),
-        };
-
-        let value = interpreter.evaluate(&expr).unwrap();
-        assert_eq!(value.to_string(), "15");
-    }
-
-    #[test]
-    fn block_execution() {
-        let mut interpreter = Interpreter::new();
-
-        let stmts = vec![
-            Stmt::Var {
-                name: Token {
-                    token_type: TokenType::Identifier,
-                    lexeme: "x".to_string(),
-                    literal: Literal::None,
-                    line: 1,
-                },
-                initializer: Some(Expr::Literal {
-                    uid: 0,
-                    value: Literal::Number(10.0),
-                }),
-            },
-            Stmt::Var {
-                name: Token {
-                    token_type: TokenType::Identifier,
-                    lexeme: "x".to_string(),
-                    literal: Literal::None,
-                    line: 1,
-                },
-                initializer: Some(Expr::Literal {
-                    uid: 0,
-                    value: Literal::Number(20.0),
-                }),
-            },
-            Stmt::Expression(Expr::Binary {
-                uid: 0,
-                left: Box::new(Expr::Variable {
-                    uid: 0,
-                    name: Token {
-                        token_type: TokenType::Identifier,
-                        lexeme: "x".to_string(),
-                        literal: Literal::None,
-                        line: 3,
-                    },
-                }),
-                operator: Token {
-                    token_type: TokenType::Plus,
-                    lexeme: "+".to_string(),
-                    literal: Literal::None,
-                    line: 3,
-                },
-                right: Box::new(Expr::Variable {
-                    uid: 0,
-                    name: Token {
-                        token_type: TokenType::Identifier,
-                        lexeme: "x".to_string(),
-                        literal: Literal::None,
-                        line: 1,
-                    },
-                }),
-            }),
-        ];
-
-        assert!(interpreter
-            .execute_block(&stmts, interpreter.environment.clone())
-            .is_ok());
+        assert_prints("test_files/expression_eval.lox", &[String::from("15")])
     }
 
     #[test]
     fn variable_scoping() {
-        let lox_code =
-            fs::read_to_string("test_files/variable_scoping.lox").expect("file to be readable");
-
-        let logger = Box::new(MockLogger::new());
-        let logs = logger.logs.clone();
-        execute_code(lox_code, logger);
-
-        let expected_logs = [
-            String::from("inner a"),
-            String::from("outer b"),
-            String::from("global c"),
-            String::from("outer a"),
-            String::from("outer b"),
-            String::from("global c"),
-            String::from("global a"),
-            String::from("global b"),
-            String::from("global c"),
-        ];
-        assert_eq!(expected_logs.len(), logs.borrow().len());
-        for (index, log) in logs.borrow().iter().enumerate() {
-            assert_eq!(log.to_owned(), expected_logs[index]);
-        }
+        assert_prints(
+            "test_files/variable_scoping.lox",
+            &[
+                String::from("inner a"),
+                String::from("outer b"),
+                String::from("global c"),
+                String::from("outer a"),
+                String::from("outer b"),
+                String::from("global c"),
+                String::from("global a"),
+                String::from("global b"),
+                String::from("global c"),
+            ],
+        )
     }
 
     #[test]
     fn loops() {
-        let lox_code = fs::read_to_string("test_files/loops.lox").expect("file to be readable");
-
-        let logger = Box::new(MockLogger::new());
-        let logs = logger.logs.clone();
-        execute_code(lox_code, logger);
-
-        let expected_logs = ["0", "1", "2", "3", "4"];
-        assert_eq!(expected_logs.len(), logs.borrow().len());
-        for (i, log) in logs.borrow().iter().enumerate() {
-            assert_eq!(log.to_owned(), expected_logs[i])
-        }
+        assert_prints(
+            "test_files/loops.lox",
+            &[
+                String::from("0"),
+                String::from("1"),
+                String::from("2"),
+                String::from("3"),
+                String::from("4"),
+            ],
+        )
     }
 
     #[test]
     fn function_calls() {
-        let lox_code =
-            fs::read_to_string("test_files/function_calls.lox").expect("file to be readable");
-
-        let logger = Box::new(MockLogger::new());
-        let logs = logger.logs.clone();
-        execute_code(lox_code, logger);
-
-        let expected_logs = ["Hi, Dear Reader!"];
-        assert_eq!(expected_logs.len(), logs.borrow().len());
-        for (i, log) in logs.borrow().iter().enumerate() {
-            assert_eq!(log.to_owned(), expected_logs[i])
-        }
+        assert_prints(
+            "test_files/function_calls.lox",
+            &[String::from("Hi, Dear Reader!")],
+        )
     }
 
     #[test]
     fn recursive_functions() {
-        let lox_code =
-            fs::read_to_string("test_files/recursive_functions.lox").expect("file to be readable");
-
-        let logger = Box::new(MockLogger::new());
-        let logs = logger.logs.clone();
-        execute_code(lox_code, logger);
-
-        let expected_logs = [
-            "0", "1", "1", "2", "3", "5", "8", "13", "21", "34", "55", "89", "144", "233", "377",
-            "610", "987", "1597", "2584", "4181",
-        ];
-        assert_eq!(expected_logs.len(), logs.borrow().len());
-        for (i, log) in logs.borrow().iter().enumerate() {
-            assert_eq!(log.to_owned(), expected_logs[i])
-        }
+        assert_prints(
+            "test_files/recursive_functions.lox",
+            &[
+                String::from("0"),
+                String::from("1"),
+                String::from("1"),
+                String::from("2"),
+                String::from("3"),
+                String::from("5"),
+                String::from("8"),
+                String::from("13"),
+                String::from("21"),
+                String::from("34"),
+                String::from("55"),
+                String::from("89"),
+                String::from("144"),
+                String::from("233"),
+                String::from("377"),
+                String::from("610"),
+                String::from("987"),
+                String::from("1597"),
+                String::from("2584"),
+                String::from("4181"),
+            ],
+        )
     }
 
     #[test]
     fn closures() {
-        let lox_code = fs::read_to_string("test_files/closures.lox").expect("file to be readable");
-
-        let logger = Box::new(MockLogger::new());
-        let logs = logger.logs.clone();
-        execute_code(lox_code, logger);
-
-        let expected_logs = ["1"];
-        assert_eq!(expected_logs.len(), logs.borrow().len());
-        for (i, log) in logs.borrow().iter().enumerate() {
-            assert_eq!(log.to_owned(), expected_logs[i])
-        }
+        assert_prints("test_files/closures.lox", &[String::from("1")])
     }
 }
