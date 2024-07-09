@@ -47,6 +47,10 @@ impl RuntimeError {
     }
 }
 
+pub fn runtime_error() -> bool {
+    unsafe { HAD_RUNTIME_ERROR }
+}
+
 pub fn run_file(path: &str) {
     // let _bytes = fs::read(path).expect("file to be readable");
 
