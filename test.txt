@@ -1,12 +1,6 @@
-fun makeCounter() {
-  var i = 0;
-  fun count() {
-    i = i + 1;
-    print i;
-  }
-
-  return count;
+fun bad() {
+  var a = "first";
+  var a = "second";
 }
 
-var counter = makeCounter();
-counter(); // "1".
+return "at top level";

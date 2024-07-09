@@ -97,6 +97,12 @@ fn run(source: String, interpreter: &mut Interpreter) {
     let mut resolver = Resolver::new(interpreter);
     resolver.resolve_block(&statements);
 
+    unsafe {
+        if HAD_RUNTIME_ERROR {
+            process::exit(70)
+        }
+    }
+
     interpreter.interpret(statements);
 }
 

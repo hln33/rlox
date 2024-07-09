@@ -6,11 +6,19 @@ use crate::{
     print_error,
     scanner::Token,
     stmt::{self, Stmt},
+    RuntimeError,
 };
+
+#[derive(Clone)]
+enum FunctionType {
+    None,
+    Function,
+}
 
 pub struct Resolver<'a> {
     interpreter: &'a mut Interpreter,
     scopes: Vec<HashMap<String, bool>>,
+    current_function: FunctionType,
 }
 
 impl Resolver<'_> {
@@ -18,6 +26,7 @@ impl Resolver<'_> {
         Resolver {
             interpreter,
             scopes: vec![],
+            current_function: FunctionType::None,
         }
     }
 
@@ -35,7 +44,15 @@ impl Resolver<'_> {
         expr::Visitor::visit_expr(self, expr);
     }
 
-    fn resolve_function(&mut self, params: &Vec<Token>, body: &Vec<Stmt>) {
+    fn resolve_function(
+        &mut self,
+        params: &Vec<Token>,
+        body: &Vec<Stmt>,
+        function_type: FunctionType,
+    ) {
+        let enclosing_function = self.current_function.clone();
+        self.current_function = function_type;
+
         self.begin_scope();
 
         for param in params {
@@ -45,6 +62,7 @@ impl Resolver<'_> {
         self.resolve_block(body);
 
         self.end_scope();
+        self.current_function = enclosing_function;
     }
 
     fn begin_scope(&mut self) {
@@ -61,6 +79,15 @@ impl Resolver<'_> {
         }
 
         let scope = self.peek_scopes_mut();
+
+        if scope.contains_key(&name.lexeme) {
+            RuntimeError {
+                token: name.clone(),
+                message: "Already a variable with this name in this scope.".to_string(),
+            }
+            .error();
+        }
+
         scope.insert(name.lexeme.clone(), false);
     }
 
@@ -97,7 +124,7 @@ impl Resolver<'_> {
         self.declare(name);
         self.define(name);
 
-        self.resolve_function(params, body);
+        self.resolve_function(params, body, FunctionType::Function);
     }
 
     fn visit_if_stmt(
@@ -117,7 +144,15 @@ impl Resolver<'_> {
         self.resolve_expr(value);
     }
 
-    fn visit_return_stmt(&mut self, value: &Option<Box<Expr>>) {
+    fn visit_return_stmt(&mut self, name: &Token, value: &Option<Box<Expr>>) {
+        if let FunctionType::None = self.current_function {
+            RuntimeError {
+                token: name.clone(),
+                message: "Can't return from top-level code".to_string(),
+            }
+            .error();
+        }
+
         if let Some(value) = value {
             self.resolve_expr(value);
         }
@@ -221,7 +256,7 @@ impl stmt::Visitor<()> for Resolver<'_> {
             } => self.visit_if_stmt(condition, then_branch, else_branch),
             Stmt::While { condition, body } => self.visit_while_stmt(condition, body),
             Stmt::Function { name, params, body } => self.visit_function_stmt(name, params, body),
-            Stmt::Return { value, .. } => self.visit_return_stmt(value),
+            Stmt::Return { name, value } => self.visit_return_stmt(name, value),
         }
     }
 }
