@@ -529,4 +529,12 @@ mod tests {
     fn closures() {
         assert_prints("test_files/closures.lox", &[String::from("1")])
     }
+
+    #[test]
+    fn print_class_name() {
+        assert_prints(
+            "test_files/print_class_name.lox",
+            &[String::from("DevonshireCream")],
+        )
+    }
 }
