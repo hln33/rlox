@@ -7,6 +7,7 @@ use scanner::{Scanner, Token};
 use value::Value;
 
 // mod ast_printer;
+mod class;
 mod environment;
 mod expr;
 mod function;
