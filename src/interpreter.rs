@@ -4,6 +4,7 @@ use std::{
 };
 
 use crate::{
+    class::Class,
     environment::{EnvRef, Environment},
     expr::{self, Expr},
     function::{Callable, Function, NativeFunction},
@@ -88,6 +89,20 @@ impl Interpreter {
     fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) -> Result<()> {
         let local_env = Environment::new_local(&self.environment);
         self.execute_block(statements, local_env)
+    }
+
+    fn visit_class_stnt(&self, name: &Token) -> Result<()> {
+        self.environment
+            .borrow_mut()
+            .define(name.lexeme.clone(), Value::Nil);
+
+        let class = Class::new(name.lexeme.clone());
+
+        self.environment
+            .borrow_mut()
+            .assign(name, &Value::Class(class))?;
+
+        Ok(())
     }
 
     fn visit_expr_stmt(&mut self, expr: &Expr) -> Result<()> {
@@ -369,6 +384,7 @@ impl stmt::Visitor<Result<()>> for Interpreter {
             Stmt::While { condition, body } => self.visit_while_stmt(condition, body),
             Stmt::Function { name, .. } => self.visit_function_stmt(name, stmt),
             Stmt::Return { value, .. } => self.visit_return_stmt(value),
+            Stmt::Class { name, .. } => self.visit_class_stnt(name),
         }
     }
 }

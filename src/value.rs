@@ -1,6 +1,9 @@
 use std::fmt::Display;
 
-use crate::function::{Function, NativeFunction};
+use crate::{
+    class::Class,
+    function::{Function, NativeFunction},
+};
 
 #[derive(Clone, Debug)]
 pub enum Value {
@@ -9,6 +12,7 @@ pub enum Value {
     String(String),
     Function(Function),
     NativeFunction(NativeFunction),
+    Class(Class),
     Nil,
 }
 
@@ -27,6 +31,7 @@ impl Display for Value {
             Value::Nil => String::from("nil"),
             Value::Function(_) => String::from("<fn>"),
             Value::NativeFunction(_) => String::from("<native fn>"),
+            Value::Class(class) => class.to_string(),
         };
 
         write!(f, "{}", s)

@@ -27,6 +27,7 @@ pub struct NativeFunction {
     pub arity: usize,
     pub callable: fn(&mut Interpreter, Vec<Value>) -> Value,
 }
+
 impl Callable for NativeFunction {
     fn arity(&self) -> usize {
         self.arity

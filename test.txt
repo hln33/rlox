@@ -1,6 +1,7 @@
-fun bad() {
-  var a = "first";
-  var a = "second";
+class DevonshireCream {
+  serveOn() {
+    return "Scones";
+  }
 }
 
-return "at top level";
+print DevonshireCream; // Prints "DevonshireCream".
