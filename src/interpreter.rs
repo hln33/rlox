@@ -253,6 +253,7 @@ impl Interpreter {
                 callee.check_arity(evaluated_args.len(), paren)?;
                 callee.call(self, evaluated_args)
             }
+            Value::Class(callee) => callee.call(self, vec![]),
             _ => Exception::runtime_error(
                 paren.clone(),
                 String::from("Can only call functions and classes."),
@@ -535,6 +536,14 @@ mod tests {
         assert_prints(
             "test_files/print_class_name.lox",
             &[String::from("DevonshireCream")],
+        )
+    }
+
+    #[test]
+    fn print_class_instance() {
+        assert_prints(
+            "test_files/print_class_instance.lox",
+            &[String::from("Bagel instance")],
         )
     }
 }
