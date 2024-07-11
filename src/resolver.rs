@@ -13,6 +13,7 @@ use crate::{
 enum FunctionType {
     None,
     Function,
+    Method,
 }
 
 pub struct Resolver<'a> {
@@ -116,9 +117,18 @@ impl Resolver<'_> {
         self.end_scope();
     }
 
-    fn visit_class_stmt(&mut self, name: &Token) {
+    fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<Stmt>) {
         self.declare(name);
         self.define(name);
+
+        for method in methods {
+            match method {
+                Stmt::Function { name, params, body } => {
+                    self.resolve_function(params, body, FunctionType::Method)
+                }
+                _ => panic!("Method is not a function!"),
+            }
+        }
     }
 
     fn visit_expr_stmt(&mut self, expr: &Expr) {
@@ -273,7 +283,7 @@ impl stmt::Visitor<()> for Resolver<'_> {
             Stmt::While { condition, body } => self.visit_while_stmt(condition, body),
             Stmt::Function { name, params, body } => self.visit_function_stmt(name, params, body),
             Stmt::Return { name, value } => self.visit_return_stmt(name, value),
-            Stmt::Class { name, .. } => self.visit_class_stmt(name),
+            Stmt::Class { name, methods } => self.visit_class_stmt(name, methods),
         }
     }
 }

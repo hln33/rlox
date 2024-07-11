@@ -91,14 +91,23 @@ impl Interpreter {
         self.execute_block(statements, local_env)
     }
 
-    fn visit_class_stnt(&self, name: &Token) -> Result<()> {
+    fn visit_class_stnt(&self, name: &Token, methods: &Vec<Stmt>) -> Result<()> {
         self.environment
             .borrow_mut()
             .define(name.lexeme.clone(), Value::Nil);
 
-        let class = Class::new(name.lexeme.clone());
+        let mut runtime_methods = HashMap::new();
+        for method in methods {
+            match method {
+                Stmt::Function { name, .. } => {
+                    let function = Function::new(method.clone(), self.environment.clone());
+                    runtime_methods.insert(name.lexeme.clone(), function);
+                }
+                _ => panic!("Statement is not a method!"),
+            }
+        }
 
-        println!("here");
+        let class = Class::new(name.lexeme.clone(), runtime_methods);
 
         self.environment
             .borrow_mut()
@@ -419,7 +428,7 @@ impl stmt::Visitor<Result<()>> for Interpreter {
             Stmt::While { condition, body } => self.visit_while_stmt(condition, body),
             Stmt::Function { name, .. } => self.visit_function_stmt(name, stmt),
             Stmt::Return { value, .. } => self.visit_return_stmt(value),
-            Stmt::Class { name, .. } => self.visit_class_stnt(name),
+            Stmt::Class { name, methods } => self.visit_class_stnt(name, methods),
         }
     }
 }
@@ -579,5 +588,13 @@ mod tests {
             "test_files/print_class_instance.lox",
             &[String::from("Bagel instance")],
         )
+    }
+
+    #[test]
+    fn basic_method() {
+        assert_prints(
+            "test_files/basic_method.lox",
+            &[String::from("inside method")],
+        );
     }
 }
