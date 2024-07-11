@@ -76,6 +76,8 @@ impl Interpreter {
 
         self.environment = environment;
         for statement in statements {
+            // If an exception occurs we still need to restore to the previous environment.
+            // This mimicks Java's try-finally logic
             if let Err(e) = self.execute(statement) {
                 self.environment = previous;
                 return Err(e);
