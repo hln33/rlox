@@ -279,13 +279,21 @@ impl Parser<'_> {
             let equals = self.previous();
             let value = self.assignment()?;
 
-            if let Expr::Variable { name, uid: _ } = expr {
+            if let Expr::Variable { name, .. } = expr {
                 return Ok(Expr::Assign {
                     uid: next_id(),
                     name,
                     value: Box::new(value),
                 });
+            } else if let Expr::Get { object, name, .. } = expr {
+                return Ok(Expr::Set {
+                    uid: next_id(),
+                    object,
+                    name,
+                    value: Box::new(value),
+                });
             }
+
             return Err(self.error(equals, "Invalid assignment target."));
         }
 
@@ -376,6 +384,14 @@ impl Parser<'_> {
         loop {
             if self.match_token(&[TokenType::LeftParen]) {
                 expr = self.finish_call(expr)?;
+            } else if self.match_token(&[TokenType::Dot]) {
+                let name =
+                    self.consume(TokenType::Identifier, "Expect property name after '.'.")?;
+                expr = Expr::Get {
+                    uid: next_id(),
+                    object: Box::new(expr),
+                    name,
+                }
             } else {
                 break;
             }

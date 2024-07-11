@@ -196,6 +196,10 @@ impl Resolver<'_> {
         }
     }
 
+    fn visit_get_expr(&mut self, object: &Expr) {
+        self.resolve_expr(object);
+    }
+
     fn visit_grouping_expr(&mut self, expression: &Expr) {
         self.resolve_expr(expression);
     }
@@ -205,6 +209,11 @@ impl Resolver<'_> {
     fn visit_logical_expr(&mut self, left: &Expr, right: &Expr) {
         self.resolve_expr(left);
         self.resolve_expr(right);
+    }
+
+    fn visit_set_expr(&mut self, object: &Expr, value: &Expr) {
+        self.resolve_expr(value);
+        self.resolve_expr(object);
     }
 
     fn visit_unary_expr(&mut self, right: &Expr) {
@@ -243,6 +252,8 @@ impl expr::Visitor<()> for Resolver<'_> {
             Expr::Assign { name, value, .. } => self.visit_assign_expr(expr, name, value),
             Expr::Logical { left, right, .. } => self.visit_logical_expr(left, right),
             Expr::Call { callee, args, .. } => self.visit_call_expr(callee, args),
+            Expr::Get { object, .. } => self.visit_get_expr(object),
+            Expr::Set { object, value, .. } => self.visit_set_expr(object, value),
         }
     }
 }
