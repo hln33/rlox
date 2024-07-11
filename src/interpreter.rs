@@ -98,6 +98,8 @@ impl Interpreter {
 
         let class = Class::new(name.lexeme.clone());
 
+        println!("here");
+
         self.environment
             .borrow_mut()
             .assign(name, &Value::Class(class))?;
@@ -261,6 +263,17 @@ impl Interpreter {
         }
     }
 
+    fn visit_get_expr(&mut self, object: &Expr, name: &Token) -> Result<Value> {
+        let object = self.evaluate(object)?;
+        match object {
+            Value::ClassInstance(instance) => instance.get(name),
+            _ => Exception::runtime_error(
+                name.clone(),
+                String::from("Only instances have properties."),
+            ),
+        }
+    }
+
     fn visit_literal_expr(&self, literal: &Literal) -> Value {
         match literal {
             Literal::String(value) => Value::String(value.clone()),
@@ -282,6 +295,20 @@ impl Interpreter {
         }
 
         self.evaluate(right)
+    }
+
+    fn visit_set_expr(&mut self, object: &Expr, name: &Token, value: &Expr) -> Result<Value> {
+        let object = self.evaluate(object)?;
+        match object {
+            Value::ClassInstance(mut instance) => {
+                let value = self.evaluate(value)?;
+                instance.set(name, value.clone());
+                Ok(value)
+            }
+            _ => {
+                Exception::runtime_error(name.clone(), String::from("Only instances have fields."))
+            }
+        }
     }
 
     fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<Value> {
@@ -366,6 +393,13 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                 args,
                 ..
             } => self.visit_call_expr(callee, paren, args),
+            Expr::Get { object, name, .. } => self.visit_get_expr(object, name),
+            Expr::Set {
+                object,
+                name,
+                value,
+                ..
+            } => self.visit_set_expr(object, name, value),
         }
     }
 }

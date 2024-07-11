@@ -1,3 +1,6 @@
 class Bagel {}
 var bagel = Bagel();
 print bagel; // Prints "Bagel instance".
+
+bagel.topping = "seeds";
+print bagel.topping;

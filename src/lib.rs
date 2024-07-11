@@ -89,7 +89,7 @@ pub fn run_prompt() {
         if user_input == "exit" {
             break;
         }
-        // todo run line of code
+
         run(user_input.to_string(), &mut interpreter);
     }
 }
