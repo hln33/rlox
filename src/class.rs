@@ -1,18 +1,29 @@
 use std::{collections::HashMap, fmt::Display};
 
 use crate::{
-    function::Callable, interpreter::Interpreter, scanner::Token, value::Value, Exception,
-    RuntimeError,
+    function::{Callable, Function},
+    interpreter::Interpreter,
+    scanner::Token,
+    value::Value,
+    Exception, RuntimeError,
 };
 
 #[derive(Clone, Debug)]
 pub struct Class {
     name: String,
+    methods: HashMap<String, Function>,
 }
 
 impl Class {
-    pub fn new(name: String) -> Class {
-        Class { name }
+    pub fn new(name: String, methods: HashMap<String, Function>) -> Class {
+        Class { name, methods }
+    }
+
+    fn find_method(&self, name: &str) -> Option<Value> {
+        match self.methods.get(name) {
+            Some(method) => Some(Value::Function(method.clone())),
+            None => None,
+        }
     }
 }
 
@@ -57,6 +68,10 @@ impl ClassInstance {
     pub fn get(&self, name: &Token) -> Result<Value, Exception> {
         if let Some(field) = self.fields.get(&name.lexeme) {
             return Ok(field.clone());
+        }
+
+        if let Some(method) = self.class.find_method(&name.lexeme) {
+            return Ok(method);
         }
 
         Exception::runtime_error(name.clone(), format!("Undefined property {}.", name.lexeme))
