@@ -1,7 +1,7 @@
-use std::{fmt::Display, rc::Rc};
+use std::fmt::Display;
 
 use crate::{
-    class::{Class, ClassInstance, ClassInstanceRef},
+    class::{Class, ClassInstanceRef},
     function::{Function, NativeFunction},
 };
 

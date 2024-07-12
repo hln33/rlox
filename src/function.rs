@@ -1,7 +1,5 @@
-use std::rc::{self, Rc};
-
 use crate::{
-    class::{ClassInstance, ClassInstanceRef},
+    class::ClassInstanceRef,
     environment::{EnvRef, Environment},
     interpreter::Interpreter,
     scanner::Token,

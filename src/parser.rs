@@ -546,7 +546,7 @@ impl Parser<'_> {
     }
 
     fn error(&self, token: Token, message: &str) -> ParseError {
-        print_error(token.line.try_into().unwrap(), token.lexeme, message);
+        print_error(token.line, token.lexeme, message);
         ParseError {}
     }
 
