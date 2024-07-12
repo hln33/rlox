@@ -6,7 +6,15 @@ class Cake {
 
 var cake = Cake();
 cake.flavor = "chocolate";
+
+var method = cake.taste;
 cake.taste();
+method();
 
 cake.flavor = "vanilla";
 cake.taste();
+method();
+
+cake.flavor = "strawberry";
+cake.taste();
+method();
