@@ -1,0 +1,12 @@
+class Cake {
+  taste() {
+    print this.flavor;
+  }
+}
+
+var cake = Cake();
+cake.flavor = "chocolate";
+cake.taste();
+
+cake.flavor = "vanilla";
+cake.taste();

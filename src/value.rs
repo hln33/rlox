@@ -1,7 +1,7 @@
-use std::fmt::Display;
+use std::{fmt::Display, rc::Rc};
 
 use crate::{
-    class::{Class, ClassInstance},
+    class::{Class, ClassInstance, ClassInstanceRef},
     function::{Function, NativeFunction},
 };
 
@@ -13,7 +13,7 @@ pub enum Value {
     Function(Function),
     NativeFunction(NativeFunction),
     Class(Class),
-    ClassInstance(ClassInstance),
+    ClassInstance(ClassInstanceRef),
     Nil,
 }
 
@@ -33,7 +33,7 @@ impl Display for Value {
             Value::Function(_) => String::from("<fn>"),
             Value::NativeFunction(_) => String::from("<native fn>"),
             Value::Class(class) => class.to_string(),
-            Value::ClassInstance(instance) => instance.to_string(),
+            Value::ClassInstance(instance) => instance.borrow().to_string(),
         };
 
         write!(f, "{}", s)

@@ -277,7 +277,7 @@ impl Interpreter {
     fn visit_get_expr(&mut self, object: &Expr, name: &Token) -> Result<Value> {
         let object = self.evaluate(object)?;
         match object {
-            Value::ClassInstance(instance) => instance.get(name),
+            Value::ClassInstance(instance) => instance.borrow().get(name),
             _ => Exception::runtime_error(
                 name.clone(),
                 String::from("Only instances have properties."),
@@ -311,15 +311,19 @@ impl Interpreter {
     fn visit_set_expr(&mut self, object: &Expr, name: &Token, value: &Expr) -> Result<Value> {
         let object = self.evaluate(object)?;
         match object {
-            Value::ClassInstance(mut instance) => {
+            Value::ClassInstance(instance) => {
                 let value = self.evaluate(value)?;
-                instance.set(name, value.clone());
+                instance.borrow_mut().set(name, value.clone());
                 Ok(value)
             }
             _ => {
                 Exception::runtime_error(name.clone(), String::from("Only instances have fields."))
             }
         }
+    }
+
+    fn visit_this_expr(&mut self, expr: &Expr, keyword: &Token) -> Result<Value> {
+        self.lookup_variable(keyword, expr)
     }
 
     fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<Value> {
@@ -411,6 +415,7 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                 value,
                 ..
             } => self.visit_set_expr(object, name, value),
+            Expr::This { keyword, .. } => self.visit_this_expr(expr, keyword),
         }
     }
 }
@@ -598,5 +603,13 @@ mod tests {
             "test_files/basic_method.lox",
             &[String::from("inside method")],
         );
+    }
+
+    #[test]
+    fn bound_methods() {
+        assert_prints(
+            "test_files/bound_methods.lox",
+            &[String::from("chocolate"), String::from("vanilla")],
+        )
     }
 }

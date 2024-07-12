@@ -121,6 +121,9 @@ impl Resolver<'_> {
         self.declare(name);
         self.define(name);
 
+        self.begin_scope();
+        self.peek_scopes_mut().insert(String::from("this"), true);
+
         for method in methods {
             match method {
                 Stmt::Function { name, params, body } => {
@@ -129,6 +132,8 @@ impl Resolver<'_> {
                 _ => panic!("Method is not a function!"),
             }
         }
+
+        self.end_scope();
     }
 
     fn visit_expr_stmt(&mut self, expr: &Expr) {
@@ -226,6 +231,10 @@ impl Resolver<'_> {
         self.resolve_expr(object);
     }
 
+    fn visit_this_expr(&mut self, expr: &Expr, keyword: &Token) {
+        self.resolve_local(expr, keyword);
+    }
+
     fn visit_unary_expr(&mut self, right: &Expr) {
         self.resolve_expr(right);
     }
@@ -264,6 +273,7 @@ impl expr::Visitor<()> for Resolver<'_> {
             Expr::Call { callee, args, .. } => self.visit_call_expr(callee, args),
             Expr::Get { object, .. } => self.visit_get_expr(object),
             Expr::Set { object, value, .. } => self.visit_set_expr(object, value),
+            Expr::This { keyword, .. } => self.visit_this_expr(expr, keyword),
         }
     }
 }
