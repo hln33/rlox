@@ -43,14 +43,16 @@ impl Callable for NativeFunction {
 pub struct Function {
     declaration: Stmt,
     closure: EnvRef,
+    is_initializer: bool,
 }
 
 impl Function {
-    pub fn new(declaration: Stmt, closure: EnvRef) -> Function {
+    pub fn new(declaration: Stmt, closure: EnvRef, is_initializer: bool) -> Function {
         match &declaration {
             Stmt::Function { .. } => Function {
                 declaration,
                 closure,
+                is_initializer,
             },
             _ => panic!("Function was not initialized with a function declaration!"),
         }
@@ -62,7 +64,7 @@ impl Function {
             .borrow_mut()
             .define(String::from("this"), Value::ClassInstance(instance));
 
-        Function::new(self.declaration.clone(), environment)
+        Function::new(self.declaration.clone(), environment, self.is_initializer)
     }
 }
 
@@ -92,6 +94,9 @@ impl Callable for Function {
             }
         }
 
+        if self.is_initializer {
+            return self.closure.borrow().get_at(0, "this");
+        }
         Ok(Value::Nil)
     }
 }

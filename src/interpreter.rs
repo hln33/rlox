@@ -102,7 +102,11 @@ impl Interpreter {
         for method in methods {
             match method {
                 Stmt::Function { name, .. } => {
-                    let function = Function::new(method.clone(), self.environment.clone());
+                    let function = Function::new(
+                        method.clone(),
+                        self.environment.clone(),
+                        name.lexeme == "init",
+                    );
                     runtime_methods.insert(name.lexeme.clone(), function);
                 }
                 _ => panic!("Statement is not a method!"),
@@ -123,7 +127,7 @@ impl Interpreter {
     }
 
     fn visit_function_stmt(&mut self, name: &Token, function_stmt: &Stmt) -> Result<()> {
-        let function = Function::new(function_stmt.clone(), self.environment.clone());
+        let function = Function::new(function_stmt.clone(), self.environment.clone(), false);
         self.environment
             .borrow_mut()
             .define(name.lexeme.clone(), Value::Function(function));
@@ -626,6 +630,13 @@ mod tests {
 
     #[test]
     fn init_class() {
-        assert_prints("test_files/init_class.lox", &[String::from("hello!")])
+        assert_prints(
+            "test_files/init_class.lox",
+            &[
+                String::from("hello!"),
+                String::from("hello!"),
+                String::from("foo instance"),
+            ],
+        )
     }
 }

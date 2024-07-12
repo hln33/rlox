@@ -5,3 +5,5 @@ class foo {
 }
 
 var test = foo();
+
+print test.init();
