@@ -277,7 +277,11 @@ impl Interpreter {
     fn visit_get_expr(&mut self, object: &Expr, name: &Token) -> Result<Value> {
         let object = self.evaluate(object)?;
         match object {
-            Value::ClassInstance(instance) => instance.borrow().get(name),
+            Value::ClassInstance(instance) => {
+                // pass instance_ref in case .get() needs to bind a method to 'this'
+                let instance_ref = instance.clone();
+                instance.borrow().get(name, instance_ref)
+            }
             _ => Exception::runtime_error(
                 name.clone(),
                 String::from("Only instances have properties."),
@@ -609,7 +613,14 @@ mod tests {
     fn bound_methods() {
         assert_prints(
             "test_files/bound_methods.lox",
-            &[String::from("chocolate"), String::from("vanilla")],
+            &[
+                String::from("chocolate"),
+                String::from("chocolate"),
+                String::from("vanilla"),
+                String::from("vanilla"),
+                String::from("strawberry"),
+                String::from("strawberry"),
+            ],
         )
     }
 }

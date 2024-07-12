@@ -67,13 +67,13 @@ impl ClassInstance {
         }))
     }
 
-    pub fn get(&self, name: &Token) -> Result<Value, Exception> {
+    pub fn get(&self, name: &Token, instance_ref: ClassInstanceRef) -> Result<Value, Exception> {
         if let Some(field) = self.fields.get(&name.lexeme) {
             return Ok(field.clone());
         }
 
         if let Some(Value::Function(method)) = self.class.find_method(&name.lexeme) {
-            let bound_method = method.bind(Rc::new(RefCell::new(self.clone())));
+            let bound_method = method.bind(instance_ref.clone());
             return Ok(Value::Function(bound_method));
         }
 
