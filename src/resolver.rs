@@ -126,7 +126,7 @@ impl Resolver<'_> {
 
         for method in methods {
             match method {
-                Stmt::Function { name, params, body } => {
+                Stmt::Function { params, body, .. } => {
                     self.resolve_function(params, body, FunctionType::Method)
                 }
                 _ => panic!("Method is not a function!"),

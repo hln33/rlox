@@ -5,7 +5,7 @@ use crate::{
     interpreter::Interpreter,
     scanner::Token,
     value::Value,
-    Exception, RuntimeError,
+    Exception,
 };
 
 #[derive(Clone, Debug)]
@@ -20,10 +20,9 @@ impl Class {
     }
 
     fn find_method(&self, name: &str) -> Option<Value> {
-        match self.methods.get(name) {
-            Some(method) => Some(Value::Function(method.clone())),
-            None => None,
-        }
+        self.methods
+            .get(name)
+            .map(|method| Value::Function(method.clone()))
     }
 }
 
@@ -39,7 +38,7 @@ impl Callable for Class {
         0
     }
 
-    fn call(&self, interpreter: &mut Interpreter, args: Vec<Value>) -> Result<Value, Exception> {
+    fn call(&self, _interpreter: &mut Interpreter, _args: Vec<Value>) -> Result<Value, Exception> {
         let instance = ClassInstance::new(self.clone());
         Ok(Value::ClassInstance(instance.clone()))
     }
