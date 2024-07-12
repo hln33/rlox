@@ -9,17 +9,24 @@ use crate::{
     RuntimeError,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 enum FunctionType {
     None,
     Function,
     Method,
 }
 
+#[derive(Clone, Copy)]
+enum ClassType {
+    None,
+    Class,
+}
+
 pub struct Resolver<'a> {
     interpreter: &'a mut Interpreter,
     scopes: Vec<HashMap<String, bool>>,
     current_function: FunctionType,
+    current_class: ClassType,
 }
 
 impl Resolver<'_> {
@@ -28,6 +35,7 @@ impl Resolver<'_> {
             interpreter,
             scopes: vec![],
             current_function: FunctionType::None,
+            current_class: ClassType::None,
         }
     }
 
@@ -51,7 +59,7 @@ impl Resolver<'_> {
         body: &Vec<Stmt>,
         function_type: FunctionType,
     ) {
-        let enclosing_function = self.current_function.clone();
+        let enclosing_function = self.current_function;
         self.current_function = function_type;
 
         self.begin_scope();
@@ -118,6 +126,9 @@ impl Resolver<'_> {
     }
 
     fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<Stmt>) {
+        let enclosing_class = self.current_class;
+        self.current_class = ClassType::Class;
+
         self.declare(name);
         self.define(name);
 
@@ -134,6 +145,8 @@ impl Resolver<'_> {
         }
 
         self.end_scope();
+
+        self.current_class = enclosing_class;
     }
 
     fn visit_expr_stmt(&mut self, expr: &Expr) {
@@ -232,6 +245,15 @@ impl Resolver<'_> {
     }
 
     fn visit_this_expr(&mut self, expr: &Expr, keyword: &Token) {
+        if let ClassType::None = self.current_class {
+            print_error(
+                keyword.line,
+                keyword.lexeme.clone(),
+                "Can't use 'this' outside of a class.",
+            );
+            return;
+        }
+
         self.resolve_local(expr, keyword);
     }
 
@@ -336,5 +358,10 @@ mod tests {
     #[test]
     fn invalid_return_error() {
         test_for_resolution_error("test_files/invalid_return_error.lox")
+    }
+
+    #[test]
+    fn invalid_use_of_this() {
+        test_for_resolution_error("test_files/invalid_use_of_this_keyword.lox")
     }
 }
