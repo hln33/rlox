@@ -59,6 +59,10 @@ pub enum Expr {
         name: Token,
         value: Box<Expr>,
     },
+    This {
+        uid: u8,
+        keyword: Token,
+    },
 }
 
 impl Expr {
@@ -74,6 +78,7 @@ impl Expr {
             Expr::Call { uid, .. } => *uid,
             Expr::Get { uid, .. } => *uid,
             Expr::Set { uid, .. } => *uid,
+            Expr::This { uid, .. } => *uid,
         }
     }
 }

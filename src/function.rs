@@ -1,4 +1,7 @@
+use std::rc::{self, Rc};
+
 use crate::{
+    class::{ClassInstance, ClassInstanceRef},
     environment::{EnvRef, Environment},
     interpreter::Interpreter,
     scanner::Token,
@@ -47,41 +50,36 @@ pub struct Function {
 impl Function {
     pub fn new(declaration: Stmt, closure: EnvRef) -> Function {
         match &declaration {
-            Stmt::Function {
-                name: _,
-                params: _,
-                body: _,
-            } => Function {
+            Stmt::Function { .. } => Function {
                 declaration,
                 closure,
             },
-            _ => panic!("Function was not passed a function declaration!"),
+            _ => panic!("Function was not initialized with a function declaration!"),
         }
+    }
+
+    pub fn bind(&self, instance: ClassInstanceRef) -> Function {
+        let environment = Environment::new_local(&self.closure);
+        environment
+            .borrow_mut()
+            .define(String::from("this"), Value::ClassInstance(instance));
+
+        Function::new(self.declaration.clone(), environment)
     }
 }
 
 impl Callable for Function {
     fn arity(&self) -> usize {
-        if let Stmt::Function {
-            name: _,
-            params,
-            body: _,
-        } = &self.declaration
-        {
+        if let Stmt::Function { params, .. } = &self.declaration {
             return params.len();
         }
-        panic!("Function was not passed a function declaration!");
+        panic!("Function was not initialized with a function declaration!");
     }
 
     fn call(&self, interpreter: &mut Interpreter, args: Vec<Value>) -> Result<Value, Exception> {
         let environment = Environment::new_local(&self.closure);
 
-        if let Stmt::Function {
-            name: _,
-            params,
-            body,
-        } = &self.declaration
-        {
+        if let Stmt::Function { params, body, .. } = &self.declaration {
             for (i, param) in params.iter().enumerate() {
                 environment
                     .borrow_mut()

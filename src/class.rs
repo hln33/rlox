@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc};
 
 use crate::{
     function::{Callable, Function},
@@ -41,9 +41,11 @@ impl Callable for Class {
 
     fn call(&self, interpreter: &mut Interpreter, args: Vec<Value>) -> Result<Value, Exception> {
         let instance = ClassInstance::new(self.clone());
-        Ok(Value::ClassInstance(instance))
+        Ok(Value::ClassInstance(instance.clone()))
     }
 }
+
+pub type ClassInstanceRef = Rc<RefCell<ClassInstance>>;
 
 #[derive(Clone, Debug)]
 pub struct ClassInstance {
@@ -58,11 +60,11 @@ impl Display for ClassInstance {
 }
 
 impl ClassInstance {
-    pub fn new(class: Class) -> ClassInstance {
-        ClassInstance {
+    pub fn new(class: Class) -> ClassInstanceRef {
+        Rc::new(RefCell::new(ClassInstance {
             class,
             fields: HashMap::new(),
-        }
+        }))
     }
 
     pub fn get(&self, name: &Token) -> Result<Value, Exception> {
@@ -70,8 +72,9 @@ impl ClassInstance {
             return Ok(field.clone());
         }
 
-        if let Some(method) = self.class.find_method(&name.lexeme) {
-            return Ok(method);
+        if let Some(Value::Function(method)) = self.class.find_method(&name.lexeme) {
+            let bound_method = method.bind(Rc::new(RefCell::new(self.clone())));
+            return Ok(Value::Function(bound_method));
         }
 
         Exception::runtime_error(name.clone(), format!("Undefined property {}.", name.lexeme))

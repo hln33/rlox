@@ -367,7 +367,6 @@ impl Parser<'_> {
                 };
             }
         }
-
         let paren = self.consume(TokenType::RightParen, "Expect ')' after arguments.")?;
 
         Ok(Expr::Call {
@@ -424,6 +423,13 @@ impl Parser<'_> {
             return Ok(Expr::Literal {
                 uid: next_id(),
                 value: self.previous().literal,
+            });
+        }
+
+        if self.match_token(&[TokenType::This]) {
+            return Ok(Expr::This {
+                uid: next_id(),
+                keyword: self.previous(),
             });
         }
 
