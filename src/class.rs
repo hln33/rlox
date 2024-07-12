@@ -35,11 +35,28 @@ impl Display for Class {
 // class constructor
 impl Callable for Class {
     fn arity(&self) -> usize {
+        if let Some(initializer) = self.find_method("init") {
+            match initializer {
+                Value::Function(initializer) => return initializer.arity(),
+                _ => panic!("initializer is not a function!"),
+            }
+        }
+
         0
     }
 
-    fn call(&self, _interpreter: &mut Interpreter, _args: Vec<Value>) -> Result<Value, Exception> {
+    fn call(&self, interpreter: &mut Interpreter, args: Vec<Value>) -> Result<Value, Exception> {
         let instance = ClassInstance::new(self.clone());
+
+        if let Some(initializer) = self.find_method("init") {
+            match initializer {
+                Value::Function(initializer) => {
+                    let _ = initializer.bind(instance.clone()).call(interpreter, args);
+                }
+                _ => panic!("initalizer is not a function!"),
+            };
+        }
+
         Ok(Value::ClassInstance(instance.clone()))
     }
 }
