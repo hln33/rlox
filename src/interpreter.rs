@@ -623,4 +623,9 @@ mod tests {
             ],
         )
     }
+
+    #[test]
+    fn init_class() {
+        assert_prints("test_files/init_class.lox", &[String::from("hello!")])
+    }
 }
