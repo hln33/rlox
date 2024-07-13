@@ -25,7 +25,7 @@ pub struct Interpreter {
 }
 
 impl Interpreter {
-    pub fn new() -> Interpreter {
+    pub fn new(logger: Option<Box<dyn Logger>>) -> Interpreter {
         let globals = Environment::new_global();
         globals.borrow_mut().define(
             "clock".to_string(),
@@ -39,11 +39,17 @@ impl Interpreter {
         );
 
         let environment = globals.clone();
+        let logger = if let Some(logger) = logger {
+            logger
+        } else {
+            Box::new(StdoutLogger)
+        };
+
         Interpreter {
             globals,
             environment,
             locals: HashMap::new(),
-            logger: Box::new(StdoutLogger),
+            logger,
         }
     }
 
@@ -445,198 +451,5 @@ impl stmt::Visitor<Result<()>> for Interpreter {
             Stmt::Return { value, .. } => self.visit_return_stmt(value),
             Stmt::Class { name, methods } => self.visit_class_stnt(name, methods),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::{cell::RefCell, env, fmt::Arguments, fs, rc::Rc, vec};
-
-    use crate::{parser::Parser, resolver::Resolver, scanner::Scanner};
-
-    use super::*;
-
-    struct MockLogger {
-        logs: Rc<RefCell<Vec<String>>>,
-    }
-    impl MockLogger {
-        fn new() -> MockLogger {
-            MockLogger {
-                logs: Rc::new(RefCell::new(vec![])),
-            }
-        }
-    }
-    impl Logger for MockLogger {
-        fn print(&mut self, value: Arguments) {
-            self.logs.borrow_mut().push(value.to_string());
-        }
-    }
-
-    fn assert_prints(file_path: &str, expected_prints: &[String]) {
-        let lox_code = fs::read_to_string(file_path).expect("file to be readable");
-        let logger = Box::new(MockLogger::new());
-        let logs = logger.logs.clone();
-        execute_code(lox_code, logger);
-
-        assert_eq!(expected_prints.len(), logs.borrow().len());
-        for (index, log) in logs.borrow().iter().enumerate() {
-            assert_eq!(log.to_owned(), expected_prints[index]);
-        }
-    }
-
-    fn execute_code(lox_code: String, logger: Box<MockLogger>) {
-        env::set_var("RUST_BACKTRACE", "1");
-
-        let mut interpreter = Interpreter::new();
-        interpreter.logger = logger;
-
-        let mut scanner = Scanner::new(lox_code);
-        let tokens = scanner.scan_tokens();
-
-        let mut parser = Parser::new(tokens);
-        let statements = parser.parse();
-
-        let mut resolver = Resolver::new(&mut interpreter);
-        resolver.resolve_block(&statements);
-
-        interpreter.interpret(statements);
-    }
-
-    #[test]
-    fn variable_declaration_and_assignment() {
-        assert_prints(
-            "test_files/declaration_and_assignment.lox",
-            &[String::from("1"), String::from("25.1")],
-        )
-    }
-
-    #[test]
-    fn expression_evaluation() {
-        assert_prints("test_files/expression_eval.lox", &[String::from("15")])
-    }
-
-    #[test]
-    fn variable_scoping() {
-        assert_prints(
-            "test_files/variable_scoping.lox",
-            &[
-                String::from("inner a"),
-                String::from("outer b"),
-                String::from("global c"),
-                String::from("outer a"),
-                String::from("outer b"),
-                String::from("global c"),
-                String::from("global a"),
-                String::from("global b"),
-                String::from("global c"),
-            ],
-        )
-    }
-
-    #[test]
-    fn loops() {
-        assert_prints(
-            "test_files/loops.lox",
-            &[
-                String::from("0"),
-                String::from("1"),
-                String::from("2"),
-                String::from("3"),
-                String::from("4"),
-            ],
-        )
-    }
-
-    #[test]
-    fn function_calls() {
-        assert_prints(
-            "test_files/function_calls.lox",
-            &[String::from("Hi, Dear Reader!")],
-        )
-    }
-
-    #[test]
-    fn recursive_functions() {
-        assert_prints(
-            "test_files/recursive_functions.lox",
-            &[
-                String::from("0"),
-                String::from("1"),
-                String::from("1"),
-                String::from("2"),
-                String::from("3"),
-                String::from("5"),
-                String::from("8"),
-                String::from("13"),
-                String::from("21"),
-                String::from("34"),
-                String::from("55"),
-                String::from("89"),
-                String::from("144"),
-                String::from("233"),
-                String::from("377"),
-                String::from("610"),
-                String::from("987"),
-                String::from("1597"),
-                String::from("2584"),
-                String::from("4181"),
-            ],
-        )
-    }
-
-    #[test]
-    fn closures() {
-        assert_prints("test_files/closures.lox", &[String::from("1")])
-    }
-
-    #[test]
-    fn print_class_name() {
-        assert_prints(
-            "test_files/print_class_name.lox",
-            &[String::from("DevonshireCream")],
-        )
-    }
-
-    #[test]
-    fn print_class_instance() {
-        assert_prints(
-            "test_files/print_class_instance.lox",
-            &[String::from("Bagel instance")],
-        )
-    }
-
-    #[test]
-    fn basic_method() {
-        assert_prints(
-            "test_files/basic_method.lox",
-            &[String::from("inside method")],
-        );
-    }
-
-    #[test]
-    fn bound_methods() {
-        assert_prints(
-            "test_files/bound_methods.lox",
-            &[
-                String::from("chocolate"),
-                String::from("chocolate"),
-                String::from("vanilla"),
-                String::from("vanilla"),
-                String::from("strawberry"),
-                String::from("strawberry"),
-            ],
-        )
-    }
-
-    #[test]
-    fn init_class() {
-        assert_prints(
-            "test_files/init_class.lox",
-            &[
-                String::from("hello!"),
-                String::from("hello!"),
-                String::from("foo instance"),
-            ],
-        )
     }
 }

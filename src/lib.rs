@@ -1,6 +1,7 @@
 use std::{fs, io, process};
 
 use interpreter::Interpreter;
+use logger::Logger;
 use parser::Parser;
 use resolver::Resolver;
 use scanner::{Scanner, Token};
@@ -12,7 +13,7 @@ mod environment;
 mod expr;
 mod function;
 mod interpreter;
-mod logger;
+pub mod logger;
 mod parser;
 mod resolver;
 mod scanner;
@@ -60,10 +61,10 @@ fn check_runtime_error() {
     }
 }
 
-pub fn run_file(path: &str) {
+pub fn run_file(path: &str, logger: Option<Box<dyn Logger>>) {
     // let _bytes = fs::read(path).expect("file to be readable");
 
-    let mut interpreter = Interpreter::new();
+    let mut interpreter = Interpreter::new(logger);
     let contents = fs::read_to_string(path).expect("file to be readable");
     run(contents, &mut interpreter);
 
@@ -75,7 +76,7 @@ pub fn run_file(path: &str) {
 }
 
 pub fn run_prompt() {
-    let mut interpreter = Interpreter::new();
+    let mut interpreter = Interpreter::new(None);
 
     loop {
         println!("> ");
