@@ -14,7 +14,7 @@ fn main() {
             process::exit(64);
         }
         Ordering::Equal => {
-            run_file(&args[1]);
+            run_file(&args[1], None);
         }
         _ => {
             run_prompt();

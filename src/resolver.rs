@@ -353,7 +353,7 @@ mod tests {
     fn resolve_code(lox_code: String) {
         env::set_var("RUST_BACKTRACE", "1");
 
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Interpreter::new(None);
 
         let mut scanner = Scanner::new(lox_code);
         let tokens = scanner.scan_tokens();
