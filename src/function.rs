@@ -89,13 +89,10 @@ impl Callable for Function {
             if let Err(exception) = interpreter.execute_block(body, environment) {
                 return match exception {
                     Exception::RuntimeError(e) => Err(Exception::RuntimeError(e)),
-                    Exception::Return(value) => {
-                        if self.is_initializer {
-                            self.closure.borrow().get_at(0, "this")
-                        } else {
-                            Ok(value)
-                        }
-                    }
+                    Exception::Return(value) => match self.is_initializer {
+                        true => self.closure.borrow().get_at(0, "this"),
+                        false => Ok(value),
+                    },
                 };
             }
         }
