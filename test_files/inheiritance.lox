@@ -7,4 +7,3 @@ class Doughnut {
 class BostonCream < Doughnut {}
 
 BostonCream().cook();
-

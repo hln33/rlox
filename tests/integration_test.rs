@@ -159,3 +159,11 @@ fn init_class() {
         ],
     )
 }
+
+#[test]
+fn inheritance() {
+    assert_prints(
+        "inheiritance.lox",
+        &[String::from("Fry until golden brown.")],
+    )
+}

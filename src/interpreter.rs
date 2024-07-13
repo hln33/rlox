@@ -98,12 +98,39 @@ impl Interpreter {
         Ok(())
     }
 
+    fn evaluate_super_class(
+        &mut self,
+        class_name: &Token,
+        super_class_expr: &Expr,
+    ) -> Result<Class> {
+        let evaluated = self.evaluate(super_class_expr)?;
+        match evaluated {
+            Value::Class(class) => Ok(class),
+            _ => Exception::runtime_error(
+                class_name.clone(),
+                String::from("Superclass must be a class"),
+            ),
+        }
+    }
+
     fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) -> Result<()> {
         let local_env = Environment::new_local(&self.environment);
         self.execute_block(statements, local_env)
     }
 
-    fn visit_class_stnt(&self, name: &Token, methods: &Vec<Stmt>) -> Result<()> {
+    fn visit_class_stnt(
+        &mut self,
+        name: &Token,
+        super_class: &Option<Box<Expr>>,
+        methods: &Vec<Stmt>,
+    ) -> Result<()> {
+        let super_class = if let Some(super_class_expr) = super_class {
+            let class = self.evaluate_super_class(name, super_class_expr)?;
+            Some(Box::new(class))
+        } else {
+            None
+        };
+
         self.environment
             .borrow_mut()
             .define(name.lexeme.clone(), Value::Nil);
@@ -123,7 +150,7 @@ impl Interpreter {
             }
         }
 
-        let class = Class::new(name.lexeme.clone(), runtime_methods);
+        let class = Class::new(name.lexeme.clone(), super_class, runtime_methods);
 
         self.environment
             .borrow_mut()
@@ -453,7 +480,11 @@ impl stmt::Visitor<Result<()>> for Interpreter {
             Stmt::While { condition, body } => self.visit_while_stmt(condition, body),
             Stmt::Function { name, .. } => self.visit_function_stmt(name, stmt),
             Stmt::Return { value, .. } => self.visit_return_stmt(value),
-            Stmt::Class { name, methods } => self.visit_class_stnt(name, methods),
+            Stmt::Class {
+                name,
+                super_class,
+                methods,
+            } => self.visit_class_stnt(name, super_class, methods),
         }
     }
 }
