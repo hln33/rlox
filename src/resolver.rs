@@ -13,6 +13,7 @@ use crate::{
 enum FunctionType {
     None,
     Function,
+    Initializer,
     Method,
 }
 
@@ -137,8 +138,14 @@ impl Resolver<'_> {
 
         for method in methods {
             match method {
-                Stmt::Function { params, body, .. } => {
-                    self.resolve_function(params, body, FunctionType::Method)
+                Stmt::Function { params, body, name } => {
+                    let declaration = if name.lexeme == "init" {
+                        FunctionType::Initializer
+                    } else {
+                        FunctionType::Method
+                    };
+
+                    self.resolve_function(params, body, declaration)
                 }
                 _ => panic!("Method is not a function!"),
             }
@@ -187,6 +194,14 @@ impl Resolver<'_> {
         }
 
         if let Some(value) = value {
+            if let FunctionType::Initializer = self.current_function {
+                RuntimeError {
+                    token: name.clone(),
+                    message: "Can't return a value from an initializer.".to_string(),
+                }
+                .error()
+            }
+
             self.resolve_expr(value);
         }
     }
@@ -363,5 +378,10 @@ mod tests {
     #[test]
     fn invalid_use_of_this() {
         test_for_resolution_error("test_files/invalid_use_of_this_keyword.lox")
+    }
+
+    #[test]
+    fn return_from_init_error() {
+        test_for_resolution_error("test_files/return_from_init_error.lox")
     }
 }

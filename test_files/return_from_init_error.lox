@@ -1,0 +1,7 @@
+class foo {
+  init() {
+    return 1;
+  }
+}
+
+var test = foo();
