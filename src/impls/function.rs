@@ -88,6 +88,7 @@ impl Callable for Function {
                 return match exception {
                     Exception::RuntimeError(e) => Err(Exception::RuntimeError(e)),
                     Exception::Return(value) => match self.is_initializer {
+                        // initializers always return their instance AKA "this"
                         true => self.closure.borrow().get_at(0, "this"),
                         false => Ok(value),
                     },

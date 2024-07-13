@@ -11,18 +11,31 @@ use super::function::{Callable, Function};
 #[derive(Clone, Debug)]
 pub struct Class {
     name: String,
+    super_class: Option<Box<Class>>,
     methods: HashMap<String, Function>,
 }
 
 impl Class {
-    pub fn new(name: String, methods: HashMap<String, Function>) -> Class {
-        Class { name, methods }
+    pub fn new(
+        name: String,
+        super_class: Option<Box<Class>>,
+        methods: HashMap<String, Function>,
+    ) -> Class {
+        Class {
+            name,
+            super_class,
+            methods,
+        }
     }
 
     fn find_method(&self, name: &str) -> Option<Value> {
         self.methods
             .get(name)
             .map(|method| Value::Function(method.clone()))
+            .or(self
+                .super_class
+                .as_ref()
+                .and_then(|super_class| super_class.find_method(name)))
     }
 }
 

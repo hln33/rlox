@@ -122,18 +122,47 @@ impl Resolver<'_> {
         }
     }
 
+    fn resolve_super_class(&mut self, class_name: &Token, super_class: &Expr) {
+        match super_class {
+            Expr::Variable {
+                name: super_class_name,
+                ..
+            } => {
+                if class_name.lexeme == super_class_name.lexeme {
+                    RuntimeError {
+                        token: super_class_name.clone(),
+                        message: "A class can't inherit from itself.".to_string(),
+                    }
+                    .error()
+                }
+
+                self.resolve_expr(super_class);
+            }
+            _ => panic!("super_class is not an expression!"),
+        }
+    }
+
     fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) {
         self.begin_scope();
         self.resolve_block(statements);
         self.end_scope();
     }
 
-    fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<Stmt>) {
+    fn visit_class_stmt(
+        &mut self,
+        name: &Token,
+        super_class: &Option<Box<Expr>>,
+        methods: &Vec<Stmt>,
+    ) {
         let enclosing_class = self.current_class;
         self.current_class = ClassType::Class;
 
         self.declare(name);
         self.define(name);
+
+        if let Some(super_class) = super_class {
+            self.resolve_super_class(name, super_class);
+        }
 
         self.begin_scope();
         self.peek_scopes_mut().insert(String::from("this"), true);
@@ -332,7 +361,11 @@ impl stmt::Visitor<()> for Resolver<'_> {
             Stmt::While { condition, body } => self.visit_while_stmt(condition, body),
             Stmt::Function { name, params, body } => self.visit_function_stmt(name, params, body),
             Stmt::Return { name, value } => self.visit_return_stmt(name, value),
-            Stmt::Class { name, methods } => self.visit_class_stmt(name, methods),
+            Stmt::Class {
+                name,
+                super_class,
+                methods,
+            } => self.visit_class_stmt(name, super_class, methods),
         }
     }
 }

@@ -33,6 +33,7 @@ pub enum Stmt {
     },
     Class {
         name: Token,
+        super_class: Option<Box<Expr>>,
         methods: Vec<Stmt>,
     },
 }
