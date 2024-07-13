@@ -4,14 +4,18 @@ use std::{
 };
 
 use crate::{
-    class::Class,
     environment::{EnvRef, Environment},
-    expr::{self, Expr},
-    function::{Callable, Function, NativeFunction},
-    logger::{Logger, StdoutLogger},
-    scanner::{Literal, Token, TokenType},
-    stmt::{self, Stmt},
-    value::Value,
+    impls::{
+        class::Class,
+        function::{Callable, Function, NativeFunction},
+    },
+    syntax::{
+        expr::{self, Expr},
+        stmt::{self, Stmt},
+        token::{Literal, Token, TokenType},
+        value::Value,
+    },
+    utils::logger::{Logger, StdoutLogger},
     Exception,
 };
 

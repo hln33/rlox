@@ -1,24 +1,20 @@
 use std::{fs, io, process};
 
 use interpreter::Interpreter;
-use logger::Logger;
 use parser::Parser;
 use resolver::Resolver;
-use scanner::{Scanner, Token};
-use value::Value;
+use scanner::Scanner;
+use syntax::{token::Token, value::Value};
+pub use utils::logger::Logger;
 
-// mod ast_printer;
-mod class;
 mod environment;
-mod expr;
-mod function;
+mod impls;
 mod interpreter;
-pub mod logger;
 mod parser;
 mod resolver;
 mod scanner;
-mod stmt;
-mod value;
+mod syntax;
+mod utils;
 
 static mut HAD_RUNTIME_ERROR: bool = false;
 

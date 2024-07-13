@@ -1,8 +1,10 @@
 use crate::{
-    expr::Expr,
     print_error,
-    scanner::{Literal, Token, TokenType},
-    stmt::Stmt,
+    syntax::{
+        expr::Expr,
+        stmt::Stmt,
+        token::{Literal, Token, TokenType},
+    },
 };
 
 static mut ID: u8 = 0;

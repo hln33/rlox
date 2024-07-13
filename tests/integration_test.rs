@@ -1,6 +1,6 @@
 use std::{cell::RefCell, fmt::Arguments, rc::Rc, vec};
 
-use rlox::{logger::Logger, run_file};
+use rlox::{run_file, Logger};
 
 const TEST_FILE_DIR: &str = "test_files";
 

@@ -1,6 +1,6 @@
 use std::hash::Hash;
 
-use crate::scanner::{Literal, Token};
+use super::token::{Literal, Token};
 
 pub trait Visitor<T> {
     fn visit_expr(&mut self, expression: &Expr) -> T;

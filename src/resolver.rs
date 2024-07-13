@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 
 use crate::{
-    expr::{self, Expr},
     interpreter::Interpreter,
     print_error,
-    scanner::Token,
-    stmt::{self, Stmt},
+    syntax::{
+        expr::{self, Expr},
+        stmt::{self, Stmt},
+        token::Token,
+    },
     RuntimeError,
 };
 

@@ -1,4 +1,7 @@
-use crate::{scanner::Token, value::Value, Exception};
+use crate::{
+    syntax::{token::Token, value::Value},
+    Exception,
+};
 use std::{
     cell::RefCell,
     collections::{hash_map::Entry, HashMap},
