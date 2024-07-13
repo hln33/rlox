@@ -1,4 +1,4 @@
-use crate::{expr::Expr, scanner::Token};
+use super::{expr::Expr, token::Token};
 
 pub trait Visitor<T> {
     fn visit_stmt(&mut self, stmt: &Stmt) -> T;

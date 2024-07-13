@@ -1,10 +1,8 @@
 use crate::{
-    class::ClassInstanceRef,
     environment::{EnvRef, Environment},
+    impls::class::ClassInstanceRef,
     interpreter::Interpreter,
-    scanner::Token,
-    stmt::Stmt,
-    value::Value,
+    syntax::{stmt::Stmt, token::Token, value::Value},
     Exception,
 };
 

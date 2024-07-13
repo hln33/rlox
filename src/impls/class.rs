@@ -1,12 +1,12 @@
 use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc};
 
 use crate::{
-    function::{Callable, Function},
     interpreter::Interpreter,
-    scanner::Token,
-    value::Value,
+    syntax::{token::Token, value::Value},
     Exception,
 };
+
+use super::function::{Callable, Function};
 
 #[derive(Clone, Debug)]
 pub struct Class {

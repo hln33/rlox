@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{
+use crate::impls::{
     class::{Class, ClassInstanceRef},
     function::{Function, NativeFunction},
 };
