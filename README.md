@@ -78,13 +78,13 @@ varDecl     -> "var" IDENTIFIER ( "=" expression )? ";" ;
 ### Statements
 ```
 statement   -> exprStmt
-            -> forStmt
-            -> ifStmt
-            -> printStmt
-            -> returnStmt
-            -> returnStmt
-            -> whileStmt
-            -> block ;
+             | forStmt
+             | ifStmt
+             | printStmt
+             | returnStmt
+             | returnStmt
+             | whileStmt
+             | block ;
 
 exprStmt    -> expression ";" ;
 forStmt     -> "for (" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")"
