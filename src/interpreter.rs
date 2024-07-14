@@ -42,16 +42,14 @@ impl Interpreter {
             }),
         );
 
-        let environment = globals.clone();
-        let logger = if let Some(logger) = logger {
-            logger
-        } else {
-            Box::new(StdoutLogger)
+        let logger = match logger {
+            Some(provided_logger) => provided_logger,
+            None => Box::new(StdoutLogger),
         };
 
         Interpreter {
+            environment: globals.clone(),
             globals,
-            environment,
             locals: HashMap::new(),
             logger,
         }
@@ -124,11 +122,12 @@ impl Interpreter {
         super_class: &Option<Box<Expr>>,
         methods: &Vec<Stmt>,
     ) -> Result<()> {
-        let super_class = if let Some(super_class_expr) = super_class {
-            let class = self.evaluate_super_class(name, super_class_expr)?;
-            Some(Box::new(class))
-        } else {
-            None
+        let super_class = match super_class {
+            Some(expr) => {
+                let class = self.evaluate_super_class(name, expr)?;
+                Some(Box::new(class))
+            }
+            None => None,
         };
 
         self.environment
