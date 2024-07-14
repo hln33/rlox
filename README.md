@@ -23,9 +23,10 @@ This repo is an implementation of the first half, but in Rust. I did my best to 
 ## Language Grammar
 ```
 program     -> declaration* EOF;
+```
 
-
-## Declarations ##
+### Declarations
+```
 declaration -> classDecl
              | funDecl
              | varDecl
@@ -35,9 +36,10 @@ classDecl   -> "class" IDENTIFIER ( "<" IDENTIFIER )?
                 "{" function* "}" ;
 funDecl     -> "fun" function ;
 varDecl     -> "var" IDENTIFIER ( "=" expression )? ";" ;
+```
 
-
-## Statements ##
+### Statements
+```
 statement   -> exprStmt
             -> forStmt
             -> ifStmt
@@ -56,9 +58,9 @@ printStmt   -> "print" expression ";" ;
 returnStmt  -> "return" expression? ";" ;
 whileStmt   -> "while (" expression ")" statement ;
 block       -> "{" declaration* "}" ;
-
-
-## Expressions ##
+```
+### Expressions
+```
 expression  -> assignment ;
 
 assignment  -> ( call "." )? IDENTIFIER "=" assignment | logic_or ;
@@ -75,9 +77,10 @@ call        -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 primary     -> "true" | "false" | "nil" | "this"
                | NUMBER | STRING | IDENTIFIER | "(" expression ")"
                | "super." IDENTIFIER ;
+```
 
-
-## Utility Rules ##
+### Utility Rules
+```
 function    -> IDENTIFIER "(" parameters? ")" block ;
 parameters  -> IDENTIFIER ( "," IDENTIFIER )* ;
 arguments   -> expression ( "," expression )* ;
