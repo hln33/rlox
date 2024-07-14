@@ -7,6 +7,29 @@ Divided into 2 parts, the book first teaches how to build a simple tree-walking 
 
 This repo is an implementation of the first half, but in Rust. I did my best to stick close to the original implementation while making best use of Rust's language features. Along the way I also wrote tests, making it easy to refactor and run regression tests. As a result, I feel like the end product is a very clean implementation of an interpreter.
 
+## Interpreter Steps
+```
+     Raw Text Input
+          |
+          ▼
+    Scanner/Lexxer
+          |
+          ▼
+        Tokens
+          |
+          ▼
+        Parser
+          |
+          ▼
+  Abstract Syntax Tree
+          |
+          ▼
+     Interpreter
+          |
+          ▼
+     Code Executed
+```
+
 ## Language Features
 - operators
   - arithmetic (+, -, *, /)
