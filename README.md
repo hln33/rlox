@@ -7,6 +7,19 @@ Divided into 2 parts, the book first teaches how to build a simple tree-walking 
 
 This repo is an implementation of the first half, but in Rust. I did my best to stick close to the original implementation while making best use of Rust's language features. Along the way I also wrote tests, making it easy to refactor and run regression tests. As a result, I feel like the end product is a very clean implementation of an interpreter.
 
+## Language Features
+- operators
+  - arithmetic (+, -, *, /)
+  - Comparison (<, <=, =, >, >=)
+  - logical (!, and, or)
+- variables
+- if statements
+- loops
+- Functions
+- Closures
+- Classes
+- Inheiritance
+
 ## Interpreter Steps
 ```
      Raw Text Input
@@ -29,19 +42,6 @@ This repo is an implementation of the first half, but in Rust. I did my best to 
           ▼
      Code Executed
 ```
-
-## Language Features
-- operators
-  - arithmetic (+, -, *, /)
-  - Comparison (<, <=, =, >, >=)
-  - logical (!, and, or)
-- variables
-- if statements
-- loops
-- Functions
-- Closures
-- Classes
-- Inheiritance
 
 ## Language Grammar
 ```
