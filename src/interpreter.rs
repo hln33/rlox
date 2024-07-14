@@ -390,10 +390,20 @@ impl Interpreter {
             .borrow()
             .get_at(*distance, "super")
             .expect("'super' to have been resolved");
-
         let super_class = match super_class {
             Value::Class(super_class) => super_class,
             _ => panic!("Expected superclass to be a class!"),
+        };
+
+        let this = self
+            .environment
+            .borrow()
+            // "this" is always right inside where "super" is stored
+            .get_at(*distance - 1, "this")
+            .expect("'this' to have been resolved");
+        let this = match this {
+            Value::ClassInstance(instance) => instance,
+            _ => panic!("Expected 'this' to be a class instance!"),
         };
 
         let method = super_class.find_method(&method.lexeme).ok_or_else(|| {
@@ -404,17 +414,8 @@ impl Interpreter {
             .unwrap_err()
         })?;
 
-        let this = self
-            .environment
-            .borrow()
-            // "this" is always right inside where "super" is stored
-            .get_at(*distance - 1, "this")
-            .expect("'this' to have been resolved");
         match method {
-            Value::Function(method) => match this {
-                Value::ClassInstance(instance) => Ok(Value::Function(method.bind(instance))),
-                _ => panic!("Expected 'this' to be a class instance!"),
-            },
+            Value::Function(method) => Ok(Value::Function(method.bind(this))),
             _ => panic!("Expected method to be a function!"),
         }
     }
