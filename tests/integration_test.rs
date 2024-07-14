@@ -167,3 +167,14 @@ fn inheritance() {
         &[String::from("Fry until golden brown.")],
     )
 }
+
+#[test]
+fn super_class_methods() {
+    assert_prints(
+        "super_class_methods.lox",
+        &[
+            String::from("Fry until golden brown."),
+            String::from("Pipe full of custard and coat with chocolate."),
+        ],
+    )
+}

@@ -162,6 +162,9 @@ impl Resolver<'_> {
 
         if let Some(super_class) = super_class {
             self.resolve_super_class(name, super_class);
+
+            self.begin_scope();
+            self.peek_scopes_mut().insert(String::from("super"), true);
         }
 
         self.begin_scope();
@@ -183,6 +186,10 @@ impl Resolver<'_> {
         }
 
         self.end_scope();
+
+        if super_class.is_some() {
+            self.end_scope();
+        }
 
         self.current_class = enclosing_class;
     }
@@ -290,6 +297,10 @@ impl Resolver<'_> {
         self.resolve_expr(object);
     }
 
+    fn visit_super_expr(&mut self, expr: &Expr, keyword: &Token) {
+        self.resolve_local(expr, keyword);
+    }
+
     fn visit_this_expr(&mut self, expr: &Expr, keyword: &Token) {
         if let ClassType::None = self.current_class {
             print_error(
@@ -342,6 +353,7 @@ impl expr::Visitor<()> for Resolver<'_> {
             Expr::Get { object, .. } => self.visit_get_expr(object),
             Expr::Set { object, value, .. } => self.visit_set_expr(object, value),
             Expr::This { keyword, .. } => self.visit_this_expr(expr, keyword),
+            Expr::Super { keyword, .. } => self.visit_super_expr(expr, keyword),
         }
     }
 }

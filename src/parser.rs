@@ -443,6 +443,18 @@ impl Parser<'_> {
             });
         }
 
+        if self.match_token(&[TokenType::Super]) {
+            let keyword = self.previous();
+            self.consume(TokenType::Dot, "Expect '.' after 'super'.")?;
+            let method = self.consume(TokenType::Identifier, "Expect superclass method name.")?;
+
+            return Ok(Expr::Super {
+                uid: next_id(),
+                keyword,
+                method,
+            });
+        }
+
         if self.match_token(&[TokenType::This]) {
             return Ok(Expr::This {
                 uid: next_id(),
