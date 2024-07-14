@@ -7,6 +7,20 @@ Divided into 2 parts, the book first teaches how to build a simple tree-walking 
 
 This repo is an implementation of the first half, but in Rust. I did my best to stick close to the original implementation while making best use of Rust's language features. Along the way I also wrote tests, making it easy to refactor and run regression tests. As a result, I feel like the end product is a very clean implementation of an interpreter.
 
+## How to Run
+
+### Running a Code File
+```
+$ cd rlox
+$ cargo run my_code.lox
+```
+
+### Running Tests
+```
+$ cd rlox
+$ cargo test
+```
+
 ## Language Features
 - operators
   - arithmetic (+, -, *, /)
