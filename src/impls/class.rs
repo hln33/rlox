@@ -28,7 +28,7 @@ impl Class {
         }
     }
 
-    fn find_method(&self, name: &str) -> Option<Value> {
+    pub fn find_method(&self, name: &str) -> Option<Value> {
         self.methods
             .get(name)
             .map(|method| Value::Function(method.clone()))

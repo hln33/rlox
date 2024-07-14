@@ -118,7 +118,7 @@ impl Interpreter {
         self.execute_block(statements, local_env)
     }
 
-    fn visit_class_stnt(
+    fn visit_class_stmt(
         &mut self,
         name: &Token,
         super_class: &Option<Box<Expr>>,
@@ -135,6 +135,14 @@ impl Interpreter {
             .borrow_mut()
             .define(name.lexeme.clone(), Value::Nil);
 
+        let prev_environment = self.environment.clone();
+        if let Some(super_class) = super_class.clone() {
+            self.environment = Environment::new_local(&self.environment);
+            self.environment
+                .borrow_mut()
+                .define(String::from("super"), Value::Class(*super_class));
+        }
+
         let mut runtime_methods = HashMap::new();
         for method in methods {
             match method {
@@ -150,7 +158,11 @@ impl Interpreter {
             }
         }
 
-        let class = Class::new(name.lexeme.clone(), super_class, runtime_methods);
+        let class = Class::new(name.lexeme.clone(), super_class.clone(), runtime_methods);
+
+        if super_class.is_some() {
+            self.environment = prev_environment;
+        }
 
         self.environment
             .borrow_mut()
@@ -367,6 +379,46 @@ impl Interpreter {
         }
     }
 
+    fn visit_super_expr(&mut self, expr: &Expr, method: &Token) -> Result<Value> {
+        let distance = self
+            .locals
+            .get(expr)
+            .expect("Super class to have been resolved");
+
+        let super_class = self
+            .environment
+            .borrow()
+            .get_at(*distance, "super")
+            .expect("'super' to have been resolved");
+
+        let super_class = match super_class {
+            Value::Class(super_class) => super_class,
+            _ => panic!("Expected superclass to be a class!"),
+        };
+
+        let method = super_class.find_method(&method.lexeme).ok_or_else(|| {
+            Exception::runtime_error::<()>(
+                method.clone(),
+                format!("Undefined property {}.", method.lexeme),
+            )
+            .unwrap_err()
+        })?;
+
+        let this = self
+            .environment
+            .borrow()
+            // "this" is always right inside where "super" is stored
+            .get_at(*distance - 1, "this")
+            .expect("'this' to have been resolved");
+        match method {
+            Value::Function(method) => match this {
+                Value::ClassInstance(instance) => Ok(Value::Function(method.bind(instance))),
+                _ => panic!("Expected 'this' to be a class instance!"),
+            },
+            _ => panic!("Expected method to be a function!"),
+        }
+    }
+
     fn visit_this_expr(&mut self, expr: &Expr, keyword: &Token) -> Result<Value> {
         self.lookup_variable(keyword, expr)
     }
@@ -461,6 +513,7 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                 ..
             } => self.visit_set_expr(object, name, value),
             Expr::This { keyword, .. } => self.visit_this_expr(expr, keyword),
+            Expr::Super { method, .. } => self.visit_super_expr(expr, method),
         }
     }
 }
@@ -484,7 +537,7 @@ impl stmt::Visitor<Result<()>> for Interpreter {
                 name,
                 super_class,
                 methods,
-            } => self.visit_class_stnt(name, super_class, methods),
+            } => self.visit_class_stmt(name, super_class, methods),
         }
     }
 }

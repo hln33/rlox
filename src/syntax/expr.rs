@@ -63,6 +63,11 @@ pub enum Expr {
         uid: u8,
         keyword: Token,
     },
+    Super {
+        uid: u8,
+        keyword: Token,
+        method: Token,
+    },
 }
 
 impl Expr {
@@ -79,6 +84,7 @@ impl Expr {
             Expr::Get { uid, .. } => *uid,
             Expr::Set { uid, .. } => *uid,
             Expr::This { uid, .. } => *uid,
+            Expr::Super { uid, .. } => *uid,
         }
     }
 }
