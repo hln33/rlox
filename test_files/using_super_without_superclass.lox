@@ -4,5 +4,3 @@ class Eclair {
     print "Pipe full of crème pâtissière.";
   }
 }
-
-super.notEvenInAClass();

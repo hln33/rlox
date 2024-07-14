@@ -111,4 +111,5 @@ fn run(source: String, interpreter: &mut Interpreter) {
 // calling code will throw error
 pub fn print_error(line: usize, location: String, message: &str) {
     eprintln!("[line {line}] Error {location}: {message}");
+    unsafe { HAD_RUNTIME_ERROR = true }
 }

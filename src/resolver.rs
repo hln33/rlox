@@ -23,6 +23,7 @@ enum FunctionType {
 enum ClassType {
     None,
     Class,
+    Subclass,
 }
 
 pub struct Resolver<'a> {
@@ -122,8 +123,8 @@ impl Resolver<'_> {
         }
     }
 
-    fn resolve_super_class(&mut self, class_name: &Token, super_class: &Expr) {
-        match super_class {
+    fn resolve_super_class(&mut self, class_name: &Token, super_class_expr: &Expr) {
+        match super_class_expr {
             Expr::Variable {
                 name: super_class_name,
                 ..
@@ -136,7 +137,7 @@ impl Resolver<'_> {
                     .error()
                 }
 
-                self.resolve_expr(super_class);
+                self.resolve_expr(super_class_expr);
             }
             _ => panic!("super_class is not an expression!"),
         }
@@ -161,6 +162,7 @@ impl Resolver<'_> {
         self.define(name);
 
         if let Some(super_class) = super_class {
+            self.current_class = ClassType::Subclass;
             self.resolve_super_class(name, super_class);
 
             self.begin_scope();
@@ -298,6 +300,20 @@ impl Resolver<'_> {
     }
 
     fn visit_super_expr(&mut self, expr: &Expr, keyword: &Token) {
+        match self.current_class {
+            ClassType::None => print_error(
+                keyword.line,
+                keyword.lexeme.clone(),
+                "Can't use 'super' outside of a class.",
+            ),
+            ClassType::Class => print_error(
+                keyword.line,
+                keyword.lexeme.clone(),
+                "Can't use 'super' in a class with no superclass.",
+            ),
+            ClassType::Subclass => {}
+        }
+
         self.resolve_local(expr, keyword);
     }
 
@@ -430,5 +446,15 @@ mod tests {
     #[test]
     fn return_from_init_error() {
         test_for_resolution_error("test_files/return_from_init_error.lox")
+    }
+
+    #[test]
+    fn using_super_without_superclass() {
+        test_for_resolution_error("test_files/using_super_without_superclass.lox")
+    }
+
+    #[test]
+    fn top_level_super_use() {
+        test_for_resolution_error("test_files/top_level_super.lox")
     }
 }
