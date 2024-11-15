@@ -318,7 +318,10 @@ impl Interpreter {
                 callee.check_arity(evaluated_args.len(), paren)?;
                 callee.call(self, evaluated_args)
             }
-            Value::Class(callee) => callee.call(self, vec![]),
+            Value::Class(callee) => {
+                callee.check_arity(evaluated_args.len(), paren)?;
+                callee.call(self, evaluated_args)
+            },
             _ => Exception::runtime_error(
                 paren.clone(),
                 String::from("Can only call functions and classes."),

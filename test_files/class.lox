@@ -1,0 +1,12 @@
+class Player {
+    init(name) {
+        this.name = name;
+    }
+
+    run() {
+        print("Player " + this.name + " is running...");
+    }
+}
+
+var p = Player("Foo");
+p.run();
